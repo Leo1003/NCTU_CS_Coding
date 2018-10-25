@@ -1,0 +1,34 @@
+## Complier output files
+*.o
+*.obj
+
+## Vim swap files
+*.swp 
+
+# Linker output
+*.ilk
+*.map
+*.exp
+
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.hex
+
+# Debug files
+*.su
+*.idb
+*.pdb
+
