@@ -1,5 +1,5 @@
 [package]
-name = "utf8-decode"
+name = "utf8-encode"
 version = "0.1.0"
 authors = ["Leo <leo881003@gmail.com>"]
 edition = "2018"

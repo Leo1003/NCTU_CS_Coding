@@ -1,4 +1,4 @@
 [[package]]
-name = "utf8-decode"
+name = "utf8-encode"
 version = "0.1.0"
 

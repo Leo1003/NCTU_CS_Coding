@@ -8,8 +8,7 @@ fn main() {
             // Reached EOF
             break;
         }
-        input = input.trim_end_matches('\n').to_string();
-        let bytes = input.into_bytes();
+        let bytes = input.trim_end_matches('\n').as_bytes();
         let mut i = 0;
         for hex in bytes {
             print!("{:02X}", hex);
