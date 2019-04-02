@@ -39,3 +39,7 @@
 *.idb
 *.pdb
 
+# Visual Studio Code Workspaces
+.vscode/
+*.code-workspace
+
