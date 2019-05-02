@@ -64,10 +64,6 @@ int main()
         for (mapiiIter it = lit; it != rit; it++) {
             safe_erase(edge, to_remove);
             
-            if (it->first < x) {
-                prev_h = it->second;
-                continue;
-            }
             if (it->first == x || it->first == r) {
                 prev_h = it->second;
                 continue;
