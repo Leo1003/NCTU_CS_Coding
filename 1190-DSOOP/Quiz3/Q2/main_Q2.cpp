@@ -13,7 +13,7 @@ int main()
          << timeB << "\n"
          << timeC << endl;
 
-    timeC = timeA + timeB;
+    timeC = timeA + timeB + Mytime(1, 2) + timeC;
     cout << "timeA + timeB\t" << timeC << endl;
 
     timeC = timeA * multiplier1;
