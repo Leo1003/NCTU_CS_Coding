@@ -4,6 +4,8 @@
 !*.*
 # Unignore all dirs
 !*/
+# Unignore Makefile
+!Makefile
 
 ## Complier output files
 *.o
