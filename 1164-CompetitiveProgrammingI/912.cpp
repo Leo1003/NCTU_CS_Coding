@@ -4,14 +4,14 @@
 #include <vector>
 using namespace std;
 
-inline long long min3(long long a, long long b, long long c)
+inline int min3(int a, int b, int c)
 {
     return min(min(a, b), c);
 }
 
-long long LevenshteinDistcance(const string &s1, const string &s2, long long add, long long modify, long long remove)
+int LevenshteinDistcance(const string &s1, const string &s2, int add, int modify, int remove)
 {
-    vector<vector<long long>> dp(2, vector<long long>(s2.size() + 1, 0));
+    vector<vector<int>> dp(2, vector<int>(s2.size() + 1, 0));
     for (size_t j = 0; j <= s2.size(); j++) {
         dp[0][j] = j * remove;
     }
@@ -39,7 +39,7 @@ int main()
         char correct[1001], kotoha[1001];
         scanf("%1000s", correct);
         scanf("%1000s", kotoha);
-        printf("%lld\n", LevenshteinDistcance(correct, kotoha, x, z, y));
+        printf("%d\n", LevenshteinDistcance(correct, kotoha, x, z, y));
     }
     return 0;
 }
