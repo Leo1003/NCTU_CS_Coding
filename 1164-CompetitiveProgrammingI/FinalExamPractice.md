@@ -15,7 +15,7 @@ Three of the final exam problems will be selected from the following list:
     - [ ] bits
     - [ ] iboard
     - [ ] throwns
-    - [ ] armystrengtheasy
+    - [x] armystrengtheasy
     - [ ] bossbattle
     - [ ] bubbletea
     - [ ] codecleanups
