@@ -16,14 +16,14 @@ Three of the final exam problems will be selected from the following list:
     - [ ] iboard
     - [ ] throwns
     - [x] armystrengtheasy
-    - [ ] bossbattle
+    - [x] bossbattle
     - [ ] bubbletea
     - [ ] codecleanups
     - [ ] deathtaxes
-    - [ ] cardtrick2
-    - [ ] lastfactorialdigit
-    - [ ] anotherbrick
-    - [ ] register
+    - [x] cardtrick2
+    - [x] lastfactorialdigit
+    - [x] anotherbrick
+    - [x] register
     - [ ] patuljci
     - [ ] lektira
     - [ ] towering
