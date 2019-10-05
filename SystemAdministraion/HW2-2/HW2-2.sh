@@ -7,18 +7,7 @@ script_dir() {
 }
 export -f script_dir
 
-sim_dialog() {
-    dialog --backtitle "$SIM_TITLE (By Leo Chen)" --stdout "$@"
-    return $?
-}
-export -f sim_dialog
-
-sysctl_value() {
-    if [ $# -ge 1 ]; then
-        echo "$(sysctl "$1" | sed 's/[^[:space:]]*: //')"
-    fi
-}
-export -f sysctl_value
+source "$(script_dir)/_utils.sh"
 
 dlg_ret=0
 
