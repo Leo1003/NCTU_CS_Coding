@@ -1,6 +1,4 @@
-
 dlg_ret=0
-
 while [ $dlg_ret -eq 0 ]; do
     interfaces=($(ifconfig -l))
 
