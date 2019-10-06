@@ -6,7 +6,7 @@ export -f sim_dialog
 
 sysctl_value() {
     if [ $# -ge 1 ]; then
-        echo "$(sysctl "$1" | sed 's/[^[:space:]]*: //')"
+        echo "$(sysctl -n "$1")"
     fi
 }
 export -f sysctl_value

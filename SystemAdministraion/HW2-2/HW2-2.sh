@@ -28,6 +28,7 @@ while [ $dlg_ret -eq 0 ]; do
                 bash "$(script_dir)/_applet_cpu.sh"
                 ;;
             'MEM')
+                bash "$(script_dir)/_applet_mem.sh"
                 ;;
             'NET')
                 ;;
