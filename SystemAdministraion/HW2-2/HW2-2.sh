@@ -19,9 +19,6 @@ while [ $dlg_ret -eq 0 ]; do
         'FILE' 'File Browser')"
     dlg_ret=$?
     
-    reset -e '^?'
-    clear
-
     if [ $dlg_ret -eq 0 ]; then
         case "$dlg_tag" in
             'CPU')
@@ -31,12 +28,16 @@ while [ $dlg_ret -eq 0 ]; do
                 bash "$(script_dir)/_applet_mem.sh"
                 ;;
             'NET')
+                bash "$(script_dir)/_submenu_net.sh"
                 ;;
             'FILE')
                 ;;
         esac
     fi
 done
+
+reset -e '^?'
+clear
 
 if [ $dlg_ret -eq 1 ]; then 
     exit 0
