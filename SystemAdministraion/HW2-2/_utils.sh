@@ -4,12 +4,12 @@ sim_dialog() {
 }
 export -f sim_dialog
 
-sysctl_value() {
+sysval() {
     if [ $# -ge 1 ]; then
         echo "$(sysctl -n "$1")"
     fi
 }
-export -f sysctl_value
+export -f sysval
 
 bytes_fmt() {
     echo "$(echo "$1" | awk '

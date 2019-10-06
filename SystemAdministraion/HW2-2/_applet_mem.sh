@@ -1,8 +1,8 @@
 (
-    pagesz=$(sysctl_value 'hw.pagesize')
+    pagesz=$(sysval 'hw.pagesize')
     while true; do
-        mem_total="$(sysctl_value 'hw.physmem')"
-        mem_free="$(($(sysctl_value 'vm.stats.vm.v_free_count') * $pagesz))"
+        mem_total="$(sysval 'hw.physmem')"
+        mem_free="$(($(sysval 'vm.stats.vm.v_free_count') * $pagesz))"
         mem_used="$(($mem_total - $mem_free))"
 
         echo 'XXX'
