@@ -31,6 +31,7 @@ while [ $dlg_ret -eq 0 ]; do
                 bash "$(script_dir)/_submenu_net.sh"
                 ;;
             'FILE')
+                bash "$(script_dir)/_submenu_file.sh"
                 ;;
         esac
     fi
