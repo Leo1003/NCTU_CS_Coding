@@ -36,3 +36,9 @@ rdslash() {
 }
 export -f rdslash
 
+# Percent division
+perdiv() {
+    printf '% 2.02f' $(bc <<< "scale=2; $1 * 100 / $2")
+}
+export -f perdiv
+

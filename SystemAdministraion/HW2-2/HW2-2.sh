@@ -14,6 +14,7 @@ dlg_ret=0
 while [ $dlg_ret -eq 0 ]; do
     dlg_tag="$(sim_dialog --title "$SIM_TITLE -- Main Menu" --menu 'Select an applet:' 24 60 17 \
         'CPU' 'CPU Info' \
+        'USAGE' 'CPU Usage' \
         'MEM' 'Memory Info' \
         'NET' 'Network Info' \
         'FILE' 'File Browser')"
@@ -23,6 +24,9 @@ while [ $dlg_ret -eq 0 ]; do
         case "$dlg_tag" in
             'CPU')
                 bash "$(script_dir)/_applet_cpu.sh"
+                ;;
+            'USAGE')
+                bash "$(script_dir)/_applet_cpuusage.sh"
                 ;;
             'MEM')
                 bash "$(script_dir)/_applet_mem.sh"
