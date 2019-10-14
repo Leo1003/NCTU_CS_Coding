@@ -30,3 +30,9 @@ bytes_fmt() {
 }
 export -f bytes_fmt
 
+# Remove duplicated slash
+rdslash() {
+    echo "$(echo "$1" | tr -s '/')"
+}
+export -f rdslash
+

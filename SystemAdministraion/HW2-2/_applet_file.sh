@@ -4,7 +4,7 @@ if [ $# -lt 1 ]; then
 fi
 
 while true; do
-    if [ ! -f "$1" ]; then
+    if [ ! -e "$1" ]; then
         exit 1
     fi
 
@@ -27,7 +27,7 @@ while true; do
     dlg_ret=$?
 
     if [ $dlg_ret -eq 3 ]; then
-        "${EDITOR:-'ee'}" "$1"
+        "${EDITOR:-ee}" "$1"
     else
         break
     fi
