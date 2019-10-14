@@ -11,7 +11,7 @@
         echo "Used:  $(bytes_fmt "$mem_used")"
         echo "Free:  $(bytes_fmt "$mem_free")"
 
-        read -e -t 0.1 -s
+        read -e -t 1 -s
         if [ $? -eq 0 ]; then
             break
         fi
