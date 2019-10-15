@@ -6,10 +6,11 @@
         mem_used="$(($mem_total - $mem_free))"
 
         echo 'XXX'
-        echo "$mem_used $mem_total" | awk '{print int($1 / $2 * 100 + 0.5)}'
+        gaugediv $mem_used $mem_total
         echo "Total: $(bytes_fmt "$mem_total")"
         echo "Used:  $(bytes_fmt "$mem_used")"
         echo "Free:  $(bytes_fmt "$mem_free")"
+        echo 'XXX'
 
         read -e -t 1 -s
         if [ $? -eq 0 ]; then

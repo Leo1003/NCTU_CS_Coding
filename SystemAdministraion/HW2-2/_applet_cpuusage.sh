@@ -46,7 +46,7 @@ print_cpu_usage() {
         local c_sys=$((($c_s - $o_s) + ($c_i - $o_i)))
         local c_idle=$(($c_d - $o_d))
 
-        echo "CPU${1} [ USER: $(perdiv $c_usr $c_diff)% / SYS: $(perdiv $c_sys $c_diff) / IDLE: $(perdiv $c_idle $c_diff) ]"
+        echo "CPU${1} [ USER:$(perdiv $c_usr $c_diff)% / SYS:$(perdiv $c_sys $c_diff)% / IDLE:$(perdiv $c_idle $c_diff)% ]"
     else
         local o_u=${cpu_time[0]}
         local o_n=${cpu_time[1]}
@@ -69,7 +69,7 @@ print_cpu_usage() {
         local c_sys=$((($c_s - $o_s) + ($c_i - $o_i)))
         local c_idle=$(($c_d - $o_d))
 
-        echo "CPU0 [ USER: $(perdiv $c_usr $c_diff)% / SYS: $(perdiv $c_sys $c_diff) / IDLE: $(perdiv $c_idle $c_diff) ]"
+        echo "CPU0 [ USER:$(perdiv $c_usr $c_diff)% / SYS:$(perdiv $c_sys $c_diff)% / IDLE:$(perdiv $c_idle $c_diff)% ]"
     fi
 }
 
@@ -92,21 +92,26 @@ print_all_usage() {
         c_diff=1
     fi
 
-    echo "$c_used $c_diff" | awk '{print int($1 / $2 * 100 + 0.5)}'
+    gaugediv $c_used $c_diff
 }
 
 (
     while true; do
+        # Acquire the new statistics
         cpu_timen=($(sysval 'kern.cp_time'))
         if [ $cpu_cnt -gt 1 ]; then
             cpu_timesn=($(sysval 'kern.cp_times'))
         fi
 
+        # Update the gauge
         echo 'XXX'
         print_all_usage
         for c in $(seq 0 $(($cpu_cnt - 1))); do
             print_cpu_usage $c
         done
+        echo 'XXX'
+
+        # Save the statistics
         cpu_time=(${cpu_timen[@]})
         cpu_time_total=$cpu_timen_total
         if [ $cpu_cnt -gt 1 ]; then

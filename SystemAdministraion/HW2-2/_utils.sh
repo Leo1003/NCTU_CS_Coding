@@ -38,7 +38,13 @@ export -f rdslash
 
 # Percent division
 perdiv() {
-    printf '% 2.02f' $(bc <<< "scale=2; $1 * 100 / $2")
+    printf '%6.2f' "$(bc <<< "scale=2; $1 * 100 / $2")"
 }
 export -f perdiv
+
+# Integer percent division
+gaugediv() {
+    printf '%.0f\n' $(bc <<< "$1 * 100 / $2")
+}
+export -f gaugediv
 
