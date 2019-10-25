@@ -2,7 +2,7 @@
 export SIM_TITLE='System Information Monitor'
 script_dir() {
      SOURCE="${BASH_SOURCE[0]}"
-     DIR="$(dirname "$(readlink -f "$SOURCE")")"
+     DIR="$(cd "$(dirname "$(readlink -f "$SOURCE")")"; pwd -P)"
      echo "$DIR"
 }
 export -f script_dir
