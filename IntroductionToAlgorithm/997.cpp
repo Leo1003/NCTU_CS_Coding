@@ -17,10 +17,10 @@ int main()
         sum += A[i];
     }
 
-    vector<vector<bool>> dp(2, vector<bool>(sum + 1));
+    vector<vector<bool>> dp(2, vector<bool>((sum / 2) + 1));
     for (int i = 0; i <= n; i++) {
         CURR(dp, i)[0] = true;
-        for (int j = 1; j <= sum; j++) {
+        for (int j = 1; j <= sum / 2; j++) {
             if (i == 0) {
                 CURR(dp, i)[j] = false;
             } else {
