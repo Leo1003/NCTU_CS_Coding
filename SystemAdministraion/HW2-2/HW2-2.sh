@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 export SIM_TITLE='System Information Monitor'
 script_dir() {
-     SOURCE="${BASH_SOURCE[0]}"
-     DIR="$(cd "$(dirname "$(readlink -f "$SOURCE")")"; pwd -P)"
+     SOURCE="${BASH_SOURCE[-1]}"
+     DIR="$(dirname "$(readlink -f "$SOURCE")")"
      echo "$DIR"
 }
 export -f script_dir
@@ -17,7 +17,8 @@ while [ $dlg_ret -eq 0 ]; do
         'USAGE' 'CPU Usage' \
         'MEM' 'Memory Info' \
         'NET' 'Network Info' \
-        'FILE' 'File Browser')"
+        'FILE' 'File Browser' \
+        'ABOUT' 'About')"
     dlg_ret=$?
     
     if [ $dlg_ret -eq 0 ]; then
@@ -36,6 +37,10 @@ while [ $dlg_ret -eq 0 ]; do
                 ;;
             'FILE')
                 bash "$(script_dir)/_submenu_file.sh"
+                ;;
+            'ABOUT')
+                bash "$(script_dir)/_applet_about.sh"
+                dlg_ret=$?
                 ;;
         esac
     fi
