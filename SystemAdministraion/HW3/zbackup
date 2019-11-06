@@ -1,0 +1,128 @@
+#!/usr/bin/env bash
+eprint() {
+    >&2 echo $@
+}
+
+debug() {
+    if [ -n "$DEBUG" ]; then
+        >&2 echo $@
+    fi
+}
+
+DATE_REGEX='[[:digit:]]{4}-[[:digit:]]{2}-[[:digit:]]{2}-[[:digit:]]{2}:[[:digit:]]{2}:[[:digit:]]{2}'
+regex_esc() {
+    sed -e 's/[^^]/[&]/g; s/\^/\\^/g; $!a\'$'\n''\\n' <<< "$1" | tr -d '\n'
+}
+
+purge() {
+    echo 'unimplemented'
+}
+
+table() {
+    str="$1"
+    str+=$'\n'
+    str+="$2"
+    column -t <<< "$str"
+}
+
+list() {
+    snaplist="$(zfs list -t snapshot | tail -n +2)"
+    if [ $? -ne 0 ]; then
+        eprint 'Failed to accuired snapshots'
+        exit 1
+    fi
+
+    if [ $# -eq 1 ]; then
+        # Filter name
+        snaplist=$(grep "$(regex_esc "$1")@" <<< "$snaplist")
+    fi
+
+    local IFS=$'\n'
+    snaps=''
+    for snap in $snaplist; do
+        if [[ $snap =~ ^([^@]+)@(${DATE_REGEX}).*$ ]]; then
+            snaps+="${BASH_REMATCH[1]} ${BASH_REMATCH[2]}"
+            snaps+=$'\n'
+        else
+            debug "'$snap' not matched!"
+        fi
+    done
+    unset IFS
+
+    debug "snaps = '$snaps'"
+    if [ -z "$snaps" ]; then
+        debug 'Snapshot not found!'
+        return
+    fi
+
+    sed '$d' <<< "$snaps" | sort -k 2 | awk '{print NR, $0}'
+}
+
+zbackup_create() {
+    debug 'zbackup_create() Parameter: ' "$@"
+    debug 'zbackup_create() Parameter Count: ' "$#"
+    echo 'unimplemented'
+}
+
+zbackup_list() {
+    debug 'zbackup_list() Parameter: ' "$@"
+    debug 'zbackup_list() Parameter Count: ' "$#"
+
+    if [ $# -eq 2 ]; then
+        echo 'unimplemented'
+    elif [ $# -eq 1 ]; then
+        echo 'unimplemented'
+    elif [ $# -eq 0 ]; then
+        table "ID DATASET TIME" "$(list)"
+    else
+        eprint 'Usage: zbackup --list [DATASET] [ID]'
+        exit 1
+    fi
+}
+
+zbackup_delete() {
+    echo 'unimplemented'
+}
+
+zbackup_export() {
+    echo 'unimplemented'
+}
+
+zbackup_import() {
+    echo 'unimplemented'
+}
+
+debug 'Parameter: ' "$@"
+debug 'Parameter Count: ' "$#"
+if [ $# -lt 1 -o -z "$1" ]; then
+    eprint 'You must provide parameters!'
+    exit 1
+fi
+
+case "$1" in
+    '-l'|'--list')
+        shift
+        zbackup_list $@
+        exit $?
+        ;;
+    '-d'|'--delete')
+        shift
+        zbackup_delete $@
+        exit $?
+        ;;
+    '-e'|'--export')
+        shift
+        zbackup_export $@
+        exit $?
+        ;;
+    '-i'|'--import')
+        shift
+        zbackup_import $@
+        exit $?
+        ;;
+    *)
+        zbackup_create $@
+        exit $?
+        ;;
+esac
+
