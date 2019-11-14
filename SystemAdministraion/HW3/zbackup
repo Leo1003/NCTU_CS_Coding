@@ -86,6 +86,32 @@ get_id() {
     done
 }
 
+zselect() {
+    if [ $# -eq 2 ]; then
+        if ! fs_exist "$1"; then
+            eprint "Invalid parameter: '$1' is not a filesystem!"
+            return 1
+        fi
+        echo "$(get_id "$(zquery $1)" $2)"
+    elif [ $# -eq 1 ]; then
+        if [[ $1 =~ ^[0-9]+$ ]]; then
+            echo "$(get_id "$(zquery)" $1)"
+        else
+            if ! fs_exist "$1"; then
+                eprint "Invalid parameter: '$1' is not a filesystem!"
+                return 1
+            fi
+            echo "$(zquery $1)"
+        fi
+    elif [ $# -eq 0 ]; then
+        echo "$(zquery)"
+    else
+        # Prompt to print usage
+        return 2
+    fi
+    return $?
+}
+
 zcreate() {
     if ! fs_exist "$1"; then
         eprint "Invalid parameter: '$1' is not a filesystem!"
@@ -138,33 +164,42 @@ zbackup_list() {
     debug 'zbackup_list() Parameter: ' "$@"
     debug 'zbackup_list() Parameter Count: ' "$#"
 
-    if [ $# -eq 2 ]; then
-        if ! fs_exist $1; then
-            eprint "Invalid parameter: '$1' is not a filesystem!"
-            return 1
-        fi
-        table "ID DATASET TIME" "$(get_id "$(zquery $1)" $2)"
-    elif [ $# -eq 1 ]; then
-        if [[ $1 =~ ^[0-9]+$ ]]; then
-            table "ID DATASET TIME" "$(get_id "$(zquery)" $1)"
-        else
-            if ! fs_exist $1; then
-                eprint "Invalid parameter: '$1' is not a filesystem!"
-                return 1
-            fi
-            table "ID DATASET TIME" "$(zquery $1)"
-        fi
-    elif [ $# -eq 0 ]; then
-        table "ID DATASET TIME" "$(zquery)"
-    else
+    sel_data="$(zselect $@)"
+    sel_ret=$?
+    if [ $sel_ret -eq 0 ]; then
+        debug "sel_ret = $sel_ret"
+        table "ID DATASET TIME" "$sel_data"
+    elif [ $sel_ret -eq 2 ]; then
         eprint 'Usage: zbackup --list [DATASET] [ID]'
         return 1
     fi
-    return $?
+
+    return $sel_ret
 }
 
 zbackup_delete() {
-    echo 'unimplemented'
+    debug 'zbackup_delete() Parameter: ' "$@"
+    debug 'zbackup_delete() Parameter Count: ' "$#"
+
+    sel_data="$(zselect $@)"
+    sel_ret=$?
+    if [ $sel_ret -eq 0 ]; then
+        debug "destory_list = $sel_data"
+        if [ -n "$sel_data" ]; then
+            local IFS=$'\n'
+            for snap in $sel_data; do
+                local id=$(echo "$snap" | cut -d ' ' -f 1)
+                local dataset=$(echo "$snap" | cut -d ' ' -f 2)
+                local time=$(echo "$snap" | cut -d ' ' -f 3)
+                echo "Destory ${dataset}@${time}"
+            done
+        fi
+    elif [ $sel_ret -eq 2 ]; then
+        eprint 'Usage: zbackup --delete [DATASET] [ID]'
+        return 1
+    else
+        return 1
+    fi
 }
 
 zbackup_export() {
