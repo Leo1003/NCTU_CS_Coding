@@ -14,10 +14,6 @@ regex_esc() {
     sed -e 's/[^^]/[&]/g; s/\^/\\^/g; $!a\'$'\n''\\n' <<< "$1" | tr -d '\n'
 }
 
-purge() {
-    echo 'unimplemented'
-}
-
 table() {
     if [ -z "$2" ]; then
         eprint 'Not found'
@@ -32,6 +28,10 @@ table() {
 
 fs_exist() {
     zfs list -H -t filesystem "$1" > /dev/null 2>&1
+    return $?
+}
+ss_exist() {
+    zfs list -H -t snapshot "$1" > /dev/null 2>&1
     return $?
 }
 
@@ -112,6 +112,14 @@ zselect() {
     return $?
 }
 
+zremove() {
+    echo "Destory ${1}"
+    zfs destroy "$1"
+    local zret=$?
+    eprint "Failed to remove snapshot '$1'"
+    return $zret
+}
+
 zcreate() {
     if ! fs_exist "$1"; then
         eprint "Invalid parameter: '$1' is not a filesystem!"
@@ -138,7 +146,11 @@ zcreate() {
             local id=$(echo "$snap" | cut -d ' ' -f 1)
             local dataset=$(echo "$snap" | cut -d ' ' -f 2)
             local time=$(echo "$snap" | cut -d ' ' -f 3)
-            echo "Destory ${dataset}@${time}"
+            zremove "${dataset}@${time}"
+            local zret=$?
+            if [ $zret -ne 0 ]; then
+                return $zret
+            fi
         done
     fi
 
@@ -191,7 +203,11 @@ zbackup_delete() {
                 local id=$(echo "$snap" | cut -d ' ' -f 1)
                 local dataset=$(echo "$snap" | cut -d ' ' -f 2)
                 local time=$(echo "$snap" | cut -d ' ' -f 3)
-                echo "Destory ${dataset}@${time}"
+                zremove "${dataset}@${time}"
+                local zret=$?
+                if [ $zret -ne 0 ]; then
+                    return $zret
+                fi
             done
         fi
     elif [ $sel_ret -eq 2 ]; then
@@ -202,12 +218,68 @@ zbackup_delete() {
     fi
 }
 
+zexport() {
+    sel_data="$(zselect $@)"
+    sel_ret=$?
+    if [ $sel_ret -eq 0 ]; then
+        if [ -n "$sel_data" ]; then
+            local id=$(echo "$sel_data" | cut -d ' ' -f 1)
+            local dataset=$(echo "$sel_data" | cut -d ' ' -f 2)
+            local time=$(echo "$sel_data" | cut -d ' ' -f 3)
+            
+            local ss="${dataset}@${time}"
+            local filename="$ss.gz.enc"
+            echo "Export $ss => $(readlink -f "$filename")"
+            set -o pipefail
+            zfs send "$ss" | gzip | openssl enc -aes-256-cbc -pbkdf2 -salt > "$filename"
+            local zret=$?
+            set +o pipefail
+
+            if [ $zret -ne 0 ]; then
+                eprint 'Failed to export snapshot'
+                return $zret
+            fi
+        else
+            eprint 'Snapshot not found'
+            return 1
+        fi
+    else
+        return 1
+    fi
+
+    return 0
+}
+
 zbackup_export() {
-    echo 'unimplemented'
+    debug 'zbackup_export() Parameter: ' "$@"
+    debug 'zbackup_export() Parameter Count: ' "$#"
+    if [ $# -eq 2 ]; then
+        zexport $1 $2
+        return $?
+    elif [ $# -eq 1 ]; then
+        zexport $1 1
+        return $?
+    else
+        eprint 'Usage: zbackup --export DATASET [ID]'
+        return 1
+    fi
 }
 
 zbackup_import() {
-    echo 'unimplemented'
+    debug 'zbackup_import() Parameter: ' "$@"
+    debug 'zbackup_import() Parameter Count: ' "$#"
+    if [ $# -eq 2 ]; then
+        if ! [ -f "$1" ]; then
+            eprint "File '$1' not found!"
+        fi
+        if ! fs_exist "$2"; then
+            eprint "Dataset '$2' not found!"
+        fi
+        echo "Import $1 => $2"
+    else
+        eprint 'Usage: zbackup --import FILE DATASET'
+        return 1
+    fi
 }
 
 debug 'Parameter: ' "$@"
