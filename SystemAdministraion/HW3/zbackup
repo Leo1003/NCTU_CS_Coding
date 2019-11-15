@@ -89,7 +89,7 @@ get_id() {
 zselect() {
     if [ $# -eq 2 ]; then
         if ! fs_exist "$1"; then
-            eprint "Invalid parameter: '$1' is not a filesystem!"
+            eprint "Invalid parameter: '$1' is not a valid dataset!"
             return 1
         fi
         echo "$(get_id "$(zquery $1)" $2)"
@@ -98,7 +98,7 @@ zselect() {
             echo "$(get_id "$(zquery)" $1)"
         else
             if ! fs_exist "$1"; then
-                eprint "Invalid parameter: '$1' is not a filesystem!"
+                eprint "Invalid parameter: '$1' is not a valid dataset!"
                 return 1
             fi
             echo "$(zquery $1)"
@@ -116,13 +116,16 @@ zremove() {
     echo "Destory ${1}"
     zfs destroy "$1"
     local zret=$?
-    eprint "Failed to remove snapshot '$1'"
+    if [ $zret -ne 0 ]; then
+        eprint "Failed to remove snapshot '$1'"
+        return $zret
+    fi
     return $zret
 }
 
 zcreate() {
     if ! fs_exist "$1"; then
-        eprint "Invalid parameter: '$1' is not a filesystem!"
+        eprint "Invalid parameter: '$1' is not a valid dataset!"
         return 1
     fi
     if ! [[ $2 =~ ^[0-9]+$ ]] || ! [ $2 -gt 0 ]; then
@@ -226,12 +229,12 @@ zexport() {
             local id=$(echo "$sel_data" | cut -d ' ' -f 1)
             local dataset=$(echo "$sel_data" | cut -d ' ' -f 2)
             local time=$(echo "$sel_data" | cut -d ' ' -f 3)
-            
+
             local ss="${dataset}@${time}"
-            local filename="$ss.gz.enc"
-            echo "Export $ss => $(readlink -f "$filename")"
+            local filename="${ss//\//_}.gz.enc"
+            echo "Export $ss => "$filename""
             set -o pipefail
-            zfs send "$ss" | gzip | openssl enc -aes-256-cbc -pbkdf2 -salt > "$filename"
+            zfs send "$ss" | gzip | openssl enc -aes-256-cbc -pbkdf2 -iter 10000 -salt > "$filename"
             local zret=$?
             set +o pipefail
 
@@ -271,11 +274,23 @@ zbackup_import() {
     if [ $# -eq 2 ]; then
         if ! [ -f "$1" ]; then
             eprint "File '$1' not found!"
+            return 1
         fi
-        if ! fs_exist "$2"; then
-            eprint "Dataset '$2' not found!"
+        if [[ $2 =~ .*@.* ]]; then
+            eprint "'$2' is not a valid dataset name!"
+            return 1
         fi
+
         echo "Import $1 => $2"
+        set -o pipefail
+        openssl enc -d -aes-256-cbc -pbkdf2 -in "$1" | gunzip | zfs receive "$2"
+        local zret=$?
+        set +o pipefail
+
+        if [ $zret -ne 0 ]; then
+            eprint 'Failed to import snapshot'
+            return $zret
+        fi
     else
         eprint 'Usage: zbackup --import FILE DATASET'
         return 1
