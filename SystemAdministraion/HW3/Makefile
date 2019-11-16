@@ -10,6 +10,7 @@ all:
 install:
 	install -d $(DESTDIR)$(PREFIX)/bin/
 	install -m 755 zbackup $(DESTDIR)$(PREFIX)/bin/
+	install -m 755 uploadscript.sh $(DESTDIR)$(PREFIX)/bin/
 	install -d $(DESTDIR)$(PREFIX)/etc/rc.d/
 	install -m 755 ftp-watchd $(DESTDIR)$(PREFIX)/etc/rc.d
 
