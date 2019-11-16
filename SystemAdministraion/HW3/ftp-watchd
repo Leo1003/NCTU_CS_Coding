@@ -1,0 +1,20 @@
+#!/bin/sh
+
+# PROVIDE: ftp-watchd
+# REQUIRE: pureftpd
+# KEYWORD: nojail shutdown
+
+. /etc/rc.subr
+
+name="ftp_watchd"
+rcvar="ftp_watchd_enable"
+
+load_rc_config $name
+
+command="/usr/local/sbin/pure-uploadscript"
+pidfile="/var/run/pure-uploadscript.pid"
+ftp_watchd_command=${ftp_watchd_command:-"/usr/bin/touch"}
+command_args="-B -p ${pidfile} -r ${ftp_watchd_command}"
+
+run_rc_command "$1"
+
