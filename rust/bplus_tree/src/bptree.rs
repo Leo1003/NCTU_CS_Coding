@@ -82,6 +82,7 @@ impl BPTree {
         })
     }
 
+    #[inline]
     fn search_to_leaf(&self, key: i32) -> Option<Rc<RefCell<LeafNode>>> {
         if let Some(root) = &self.root {
             Some(root.search_to_leaf(key))
@@ -241,7 +242,6 @@ impl Node {
         }
     }
 
-    #[inline]
     fn search_to_leaf(&self, key: i32) -> Rc<RefCell<LeafNode>> {
         use Node::*;
         match self {
