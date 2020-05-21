@@ -214,6 +214,7 @@ impl Node {
         }
     }
 
+    #[inline]
     pub fn max_index(&self) -> i32 {
         use Node::*;
         match self {
@@ -222,6 +223,7 @@ impl Node {
         }
     }
 
+    #[inline]
     pub fn parent(&self) -> Option<Rc<RefCell<IndexNode>>> {
         use Node::*;
         match self {
@@ -230,6 +232,7 @@ impl Node {
         }
     }
 
+    #[inline]
     fn set_parent(&self, node: &Rc<RefCell<IndexNode>>) {
         use Node::*;
         match self {
@@ -238,6 +241,7 @@ impl Node {
         }
     }
 
+    #[inline]
     fn search_to_leaf(&self, key: i32) -> Rc<RefCell<LeafNode>> {
         use Node::*;
         match self {
@@ -246,6 +250,7 @@ impl Node {
         }
     }
 
+    #[inline]
     pub fn count(&self) -> usize {
         use Node::*;
         match self {
@@ -257,15 +262,20 @@ impl Node {
 
 impl IndexNode {
     fn new_root(left: Node, right: Node) -> Self {
-        Self {
-            kvs: vec![(left.max_index(), left), (right.max_index(), right)],
-            parent: None,
-        }
+        let mut kvs = Vec::with_capacity(DEGREE + 1);
+        kvs.push((left.max_index(), left));
+        kvs.push((right.max_index(), right));
+        Self { kvs, parent: None }
     }
 
     fn split_from_index(node: &mut IndexNode) -> Self {
+        let mut kvs = Vec::with_capacity(DEGREE + 1);
+        let idx = node.kvs.len() / 2;
+        kvs.extend_from_slice(&node.kvs[idx..]);
+        node.kvs.truncate(idx);
+
         IndexNode {
-            kvs: node.kvs.split_off(node.count() / 2),
+            kvs,
             parent: node.parent.clone(),
         }
     }
@@ -305,15 +315,6 @@ impl IndexNode {
         }
     }
 
-    pub fn search_down_mut(&mut self, key: i32) -> &mut Node {
-        let idx = self.search_index(key);
-        if idx < self.kvs.len() {
-            &mut self.kvs[idx].1
-        } else {
-            &mut self.kvs.last_mut().unwrap().1
-        }
-    }
-
     pub fn count(&self) -> usize {
         self.kvs.len()
     }
@@ -323,8 +324,13 @@ impl LeafNode {
     /// This constructor doesn't modify the next_node part
     /// Caller should do it by itself
     fn split_from_leaf(node: &mut LeafNode) -> Self {
+        let mut kvs = Vec::with_capacity(DEGREE + 1);
+        let idx = node.kvs.len() / 2;
+        kvs.extend_from_slice(&node.kvs[idx..]);
+        node.kvs.truncate(idx);
+
         LeafNode {
-            kvs: node.kvs.split_off(node.count() / 2),
+            kvs,
             parent: node.parent.clone(),
             next_node: None,
         }
