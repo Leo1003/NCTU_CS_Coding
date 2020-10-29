@@ -3,54 +3,27 @@
  * Source : https://gist.github.com/phsym/4605704
  */
 
+#include "hashtable.h"
+
 #include <stdlib.h>
 #include <string.h>
 
-//Hashtable element structure
-typedef struct hash_elem_t {
-    struct hash_elem_t *next; // Next element in case of a collision
-    void *data; // Pointer to the stored element
-    char key[]; // Key of the stored element
-} hash_elem_t;
-
-//Hashtabe structure
-typedef struct {
-    unsigned int capacity; // Hashtable capacity (in terms of hashed keys)
-    unsigned int e_num; // Number of element currently stored in the hashtable
-    hash_elem_t **table; // The table containaing elements
-} hashtable_t;
-
-//Structure used for iterations
-typedef struct {
-    hashtable_t *ht; // The hashtable on which we iterate
-    unsigned int index; // Current index in the table
-    hash_elem_t *elem; // Curent element in the list
-} hash_elem_it;
-
-// Inititalize hashtable iterator on hashtable 'ht'
-#define HT_ITERATOR(ht)     \
-    {                       \
-        ht, 0, ht->table[0] \
-    }
-
-char err_ptr;
-void *HT_ERROR = &err_ptr; // Data pointing to HT_ERROR are returned in case of error
-
 /*  Internal funcion to calculate hash for keys.
-    It's based on the DJB algorithm from Daniel J. Bernstein.
-    The key must be ended by '\0' character.*/
-static unsigned int ht_calc_hash(char *key)
+    It's based on the DJB algorithm from Daniel J. Bernstein. */
+static unsigned int ht_calc_hash(unsigned char *key, size_t key_size)
 {
     unsigned int h = 5381;
-    while (*(key++))
-        h = ((h << 5) + h) + (*key);
+    while (key_size--) {
+        h = ((h << 5) + h) + (*key++);
+    }
     return h;
 }
 
-/*  Create a hashtable with capacity 'capacity'
-    and return a pointer to it*/
-hashtable_t *ht_create(unsigned int capacity)
+hashtable_t *ht_create(size_t capacity, size_t key_size)
 {
+    if (key_size > MAX_KEYSIZE || key_size == 0) {
+        return NULL;
+    }
     hashtable_t *hasht = (hashtable_t *)malloc(sizeof(hashtable_t));
     if (hasht == NULL) {
         return NULL;
@@ -61,25 +34,24 @@ hashtable_t *ht_create(unsigned int capacity)
     }
     hasht->capacity = capacity;
     hasht->e_num = 0;
-    unsigned int i;
+    hasht->key_size = key_size;
+    size_t i;
     for (i = 0; i < capacity; i++) {
         hasht->table[i] = NULL;
     }
     return hasht;
 }
 
-/*  Store data in the hashtable. If data with the same key are already stored,
-    they are overwritten, and return by the function. Else it return NULL.
-    Return HT_ERROR if there are memory alloc error*/
-void *ht_put(hashtable_t *hasht, char *key, void *data)
+void *ht_put(hashtable_t *hasht, void *key, void *data)
 {
-    if (data == NULL)
+    if (data == NULL) {
         return NULL;
-    unsigned int h = ht_calc_hash(key) % hasht->capacity;
+    }
+    unsigned int h = ht_calc_hash((unsigned char *)key, hasht->key_size) % hasht->capacity;
     hash_elem_t *e = hasht->table[h];
 
     while (e != NULL) {
-        if (!strcmp(e->key, key)) {
+        if (!memcmp(e->key, key, hasht->key_size)) {
             void *ret = e->data;
             e->data = data;
             return ret;
@@ -89,9 +61,10 @@ void *ht_put(hashtable_t *hasht, char *key, void *data)
 
     // Getting here means the key doesn't already exist
 
-    if ((e = (hash_elem_t *)malloc(sizeof(hash_elem_t) + strlen(key) + 1)) == NULL)
+    if ((e = (hash_elem_t *)malloc(sizeof(hash_elem_t) + hasht->key_size)) == NULL) {
         return HT_ERROR;
-    strcpy(e->key, key);
+    }
+    memcpy(e->key, key, hasht->key_size);
     e->data = data;
 
     // Add the element at the beginning of the linked list
@@ -102,33 +75,32 @@ void *ht_put(hashtable_t *hasht, char *key, void *data)
     return NULL;
 }
 
-/* Retrieve data from the hashtable */
-void *ht_get(hashtable_t *hasht, char *key)
+void *ht_get(hashtable_t *hasht, void *key)
 {
-    unsigned int h = ht_calc_hash(key) % hasht->capacity;
+    unsigned int h = ht_calc_hash((unsigned char *)key, hasht->key_size) % hasht->capacity;
     hash_elem_t *e = hasht->table[h];
     while (e != NULL) {
-        if (!strcmp(e->key, key))
+        if (!memcmp(e->key, key, hasht->key_size)) {
             return e->data;
+        }
         e = e->next;
     }
     return NULL;
 }
 
-/*  Remove data from the hashtable. Return the data removed from the table
-    so that we can free memory if needed */
-void *ht_remove(hashtable_t *hasht, char *key)
+void *ht_remove(hashtable_t *hasht, void *key)
 {
-    unsigned int h = ht_calc_hash(key) % hasht->capacity;
+    unsigned int h = ht_calc_hash((unsigned char *)key, hasht->key_size) % hasht->capacity;
     hash_elem_t *e = hasht->table[h];
     hash_elem_t *prev = NULL;
     while (e != NULL) {
-        if (!strcmp(e->key, key)) {
+        if (!memcmp(e->key, key, hasht->key_size)) {
             void *ret = e->data;
-            if (prev != NULL)
+            if (prev != NULL) {
                 prev->next = e->next;
-            else
+            } else {
                 hasht->table[h] = e->next;
+            }
             free(e);
             e = NULL;
             hasht->e_num--;
@@ -140,11 +112,11 @@ void *ht_remove(hashtable_t *hasht, char *key)
     return NULL;
 }
 
-/* List keys. k should have length equals or greater than the number of keys */
-void ht_list_keys(hashtable_t *hasht, char **k, size_t len)
+void ht_list_keys(hashtable_t *hasht, unsigned char **k, size_t len)
 {
-    if (len < hasht->e_num)
+    if (len < hasht->e_num) {
         return;
+    }
     int ki = 0; //Index to the current string in **k
     int i = hasht->capacity;
     while (--i >= 0) {
@@ -156,12 +128,11 @@ void ht_list_keys(hashtable_t *hasht, char **k, size_t len)
     }
 }
 
-/*  List values. v should have length equals or greater
-    than the number of stored elements */
 void ht_list_values(hashtable_t *hasht, void **v, size_t len)
 {
-    if (len < hasht->e_num)
+    if (len < hasht->e_num) {
         return;
+    }
     int vi = 0; //Index to the current string in **v
     int i = hasht->capacity;
     while (--i >= 0) {
@@ -173,42 +144,39 @@ void ht_list_values(hashtable_t *hasht, void **v, size_t len)
     }
 }
 
-/* Iterate through table's elements. */
 hash_elem_t *ht_iterate(hash_elem_it *iterator)
 {
     while (iterator->elem == NULL) {
         if (iterator->index < iterator->ht->capacity - 1) {
             iterator->index++;
             iterator->elem = iterator->ht->table[iterator->index];
-        } else
+        } else {
             return NULL;
+        }
     }
     hash_elem_t *e = iterator->elem;
-    if (e)
+    if (e) {
         iterator->elem = e->next;
+    }
     return e;
 }
 
-/* Iterate through keys. */
-char *ht_iterate_keys(hash_elem_it *iterator)
+unsigned char *ht_iterate_keys(hash_elem_it *iterator)
 {
     hash_elem_t *e = ht_iterate(iterator);
     return (e == NULL ? NULL : e->key);
 }
 
-/* Iterate through values. */
 void *ht_iterate_values(hash_elem_it *iterator)
 {
     hash_elem_t *e = ht_iterate(iterator);
     return (e == NULL ? NULL : e->data);
 }
 
-/*  Removes all elements stored in the hashtable.
-    if free_data, all stored datas are also freed.*/
 void ht_clear(hashtable_t *hasht, int free_data)
 {
     hash_elem_it it = HT_ITERATOR(hasht);
-    char *k = ht_iterate_keys(&it);
+    unsigned char *k = ht_iterate_keys(&it);
     while (k != NULL) {
         if (free_data) {
             free(ht_remove(hasht, k));
@@ -219,11 +187,10 @@ void ht_clear(hashtable_t *hasht, int free_data)
     }
 }
 
-/*  Destroy the hash table, and free memory.
-    Data still stored are freed*/
-void ht_destroy(hashtable_t *hasht)
+void ht_destroy(hashtable_t *hasht, int free_data)
 {
-    ht_clear(hasht, 1); // Delete and free all.
+    ht_clear(hasht, free_data);
     free(hasht->table);
     free(hasht);
 }
+
