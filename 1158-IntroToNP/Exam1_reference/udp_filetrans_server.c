@@ -1,5 +1,7 @@
 #include <arpa/inet.h>
+#include <endian.h>
 #include <errno.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,21 +12,33 @@
 #include <unistd.h>
 
 #include "hashtable.h"
+#include "udpfile_proto.h"
 
 #define DOWNLOAD_DIR "downloads"
 #define EVCNT 4
 #define MAX_CONN 256
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 1032
 
 #define eprintf(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__)
+#define min(a, b) (a < b ? a : b)
+#define max(a, b) (a < b ? b : a)
 
 struct sess_ctx {
     struct sockaddr_in peeraddr;
-    int fd;
+    FILE *fp;
     size_t total_size;
     size_t recv_size;
     char *filename;
 };
+
+void sess_ctx_free(struct sess_ctx *ctx)
+{
+    if (ctx->fp) {
+        fclose(ctx->fp);
+    }
+    free(ctx->filename);
+    free(ctx);
+}
 
 void usage(const char *exename)
 {
@@ -46,11 +60,161 @@ int mkdir_noexist(const char *dirname)
     return 0;
 }
 
-int server_loop(int sockfd, hashtable_t *session)
+ssize_t send_resp(int sockfd, const struct sockaddr_in *addr, int code, void *data, size_t datalen)
+{
+    struct msghdr mhdr;
+    struct iovec iov[2];
+    struct uf_msg_packet phdr;
+    memset(&mhdr, 0, sizeof(struct msghdr));
+
+    mhdr.msg_name = (void *)addr;
+    mhdr.msg_namelen = sizeof(struct sockaddr_in);
+    mhdr.msg_iov = (struct iovec *)&iov;
+    mhdr.msg_iovlen = (data ? 2 : 1);
+
+    iov[0].iov_base = &phdr;
+    iov[0].iov_len = sizeof(struct uf_msg_packet);
+
+    if (data) {
+        iov[1].iov_base = data;
+        iov[1].iov_len = datalen;
+    }
+
+    phdr.code = htonl(code);
+    phdr.datalen = (data ? datalen : 0);
+    
+    return sendmsg(sockfd, &mhdr, 0);
+}
+
+void handle_msg(int sockfd, hashtable_t *sessions)
+{
+    struct sockaddr_in peeraddr;
+    socklen_t addrlen;
+    unsigned char buf[BUFFER_SIZE];
+    struct uf_msg_packet *reqp = (struct uf_msg_packet *)buf;
+
+    ssize_t recvlen = recvfrom(sockfd, buf, sizeof(unsigned char) * BUFFER_SIZE, 0, (struct sockaddr *)&peeraddr, &addrlen);
+    if (recvlen < 0) {
+        const char *errmsg = strerror(errno);
+        eprintf("Failed to receive data: %s\n", errmsg);
+        return;
+    }
+    if ((size_t)recvlen < sizeof(struct uf_msg_packet)) {
+        send_resp(sockfd, &peeraddr, UFCODE_BAD_REQUEST, NULL, 0);
+        return;
+    }
+    struct sess_ctx *ctx = (struct sess_ctx *)ht_get(sessions, &peeraddr);
+
+    size_t left_size, wrotelen;
+    int code = ntohl(reqp->code);
+    bool altered = false;
+    size_t datalen = ntohl(reqp->datalen);
+    struct stat st;
+    if (datalen != recvlen - sizeof(struct uf_msg_packet)) {
+        send_resp(sockfd, &peeraddr, UFCODE_BAD_REQUEST, NULL, 0);
+        return;
+    }
+    switch (code) {
+        case UFCODE_REQUEST:
+            if (ctx != NULL || datalen < sizeof(struct uf_data_sendreq)) {
+                send_resp(sockfd, &peeraddr, UFCODE_BAD_REQUEST, NULL, 0);
+                return;
+            }
+
+            struct uf_data_sendreq *reqdata = (struct uf_data_sendreq *)&reqp->data;
+            size_t filesize = be64toh(reqdata->filesize);
+            size_t namelen = ntohl(reqdata->filename_len);
+            if (namelen != datalen - sizeof(struct uf_data_sendreq)) {
+                send_resp(sockfd, &peeraddr, UFCODE_BAD_REQUEST, NULL, 0);
+                return;
+            }
+
+            ctx = (struct sess_ctx *)malloc(sizeof(struct sess_ctx));
+            if (ctx == NULL) {
+                send_resp(sockfd, &peeraddr, UFCODE_SERVER_ERROR, NULL, 0);
+                return;
+            }
+            char *filename = (char *)malloc(namelen + 1);
+            if (filename == NULL) {
+                free(ctx);
+                send_resp(sockfd, &peeraddr, UFCODE_SERVER_ERROR, NULL, 0);
+                return;
+            }
+            memcpy(filename, reqdata->filename, namelen);
+            filename[namelen] = '\0';
+            altered = false;
+            for (size_t i = 0; i < namelen; i++) {
+                if (filename[namelen] == '/') {
+                    filename[namelen] = '_';
+                    altered = true;
+                }
+            }
+
+            if (stat(filename, &st) == 0 || errno != ENOENT) {
+                send_resp(sockfd, &peeraddr, UFCODE_EXISTED, NULL, 0);
+                free(filename);
+                free(ctx);
+                return;
+            }
+
+            ctx->peeraddr = peeraddr;
+            ctx->recv_size = filesize;
+            ctx->recv_size = 0;
+            ctx->filename = filename;
+            ctx->fp = fopen(filename, "wbx");
+            if (ctx->fp == NULL) {
+                send_resp(sockfd, &peeraddr, UFCODE_SERVER_ERROR, NULL, 0);
+                free(filename);
+                free(ctx);
+                return;
+            }
+            ht_put(sessions, &peeraddr, ctx);
+            if (altered) {
+                size_t filename_len = strlen(filename);
+                size_t reslen = sizeof(struct uf_data_alterres) + filename_len;
+                struct uf_data_alterres *resdata = (struct uf_data_alterres *)malloc(reslen);
+                if (resdata == NULL) {
+                    send_resp(sockfd, &peeraddr, UFCODE_ALTERED, NULL, 0);
+                }
+                resdata->filename_len = htonl(filename_len);
+                memcpy(resdata->filename, filename, filename_len);
+                send_resp(sockfd, &peeraddr, UFCODE_ALTERED, resdata, reslen);
+                free(resdata);
+            } else {
+                send_resp(sockfd, &peeraddr, UFCODE_CREATED, NULL, 0);
+            }
+
+            break;
+        case UFCODE_DATA:
+            if (ctx == NULL) {
+                send_resp(sockfd, &peeraddr, UFCODE_BAD_REQUEST, NULL, 0);
+                return;
+            }
+
+            left_size = ctx->total_size - ctx->recv_size;
+            wrotelen = fwrite(buf, 1, min((size_t)recvlen, left_size), ctx->fp);
+            ctx->recv_size += wrotelen;
+
+            if (ctx->recv_size >= ctx->total_size) {
+                send_resp(sockfd, &peeraddr, UFCODE_COMPLETED, NULL, 0);
+                ht_remove(sessions, &peeraddr);
+                sess_ctx_free(ctx);
+            } else {
+                send_resp(sockfd, &peeraddr, UFCODE_CONTINUE, NULL, 0);
+            }
+
+            break;
+        case UFCODE_CANCEL:
+            // Not implemented
+            send_resp(sockfd, &peeraddr, UFCODE_SERVER_ERROR, NULL, 0);
+            break;
+    }
+}
+
+int server_loop(int sockfd, hashtable_t *sessions)
 {
     int epollfd;
     struct epoll_event ev, evs[EVCNT];
-    unsigned char buf[BUFFER_SIZE];
 
     ev.events = EPOLLIN;
     ev.data.fd = sockfd;
@@ -66,21 +230,9 @@ int server_loop(int sockfd, hashtable_t *session)
 
         for (int i = 0; i < nfds; i++) {
             if (evs[i].data.fd == sockfd) {
-                struct sockaddr_in peeraddr;
-                socklen_t addrlen;
-                ssize_t recvlen = recvfrom(sockfd, buf, sizeof(unsigned char) * BUFFER_SIZE, 0, (struct sockaddr *)&peeraddr, &addrlen);
-                if (recvlen < 0) {
-                    eprintf("Failed to receive data");
-                }
-
-                struct sess_ctx *ctx = (struct sess_ctx *)ht_get(session, &peeraddr);
-                if (ctx == NULL) {
-                    // Indicate that this is a new connection
-                } else {
-                    // Continue receiving data
-                }
+                handle_msg(sockfd, sessions);
             } else {
-                eprintf("fd received from epoll_wait() is strange!\n");
+                eprintf("Warning: fd received from epoll_wait() is strange!\n");
             }
         }
     }
@@ -116,7 +268,7 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    printf("Listening on UDP %hu...\n", port);
+    printf("Listening on UDP port %hu...\n", port);
 
     hashtable_t *session = ht_create(MAX_CONN, sizeof(struct sockaddr_in));
 

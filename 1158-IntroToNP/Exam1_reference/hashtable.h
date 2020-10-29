@@ -27,7 +27,7 @@ typedef struct {
     hash_elem_t *elem; // Curent element in the list
 } hash_elem_it;
 
-void * const HT_ERROR = (void *)-1;
+extern void * const HT_ERROR;
 
 // Inititalize hashtable iterator on hashtable 'ht'
 #define HT_ITERATOR(ht)     \

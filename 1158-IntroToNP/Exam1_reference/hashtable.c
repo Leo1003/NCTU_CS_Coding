@@ -8,6 +8,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+void * const HT_ERROR = (void *)-1;
+
 /*  Internal funcion to calculate hash for keys.
     It's based on the DJB algorithm from Daniel J. Bernstein. */
 static unsigned int ht_calc_hash(unsigned char *key, size_t key_size)
