@@ -69,7 +69,7 @@ ssize_t send_resp(int sockfd, const struct sockaddr_in *addr, int code, void *da
 
     mhdr.msg_name = (void *)addr;
     mhdr.msg_namelen = sizeof(struct sockaddr_in);
-    mhdr.msg_iov = (struct iovec *)&iov;
+    mhdr.msg_iov = iov;
     mhdr.msg_iovlen = (data ? 2 : 1);
 
     iov[0].iov_base = &phdr;
@@ -89,7 +89,7 @@ ssize_t send_resp(int sockfd, const struct sockaddr_in *addr, int code, void *da
 void handle_msg(int sockfd, hashtable_t *sessions)
 {
     struct sockaddr_in peeraddr;
-    socklen_t addrlen;
+    socklen_t addrlen = sizeof(struct sockaddr_in);
     unsigned char buf[BUFFER_SIZE];
     struct uf_msg_packet *reqp = (struct uf_msg_packet *)buf;
 
@@ -156,7 +156,7 @@ void handle_msg(int sockfd, hashtable_t *sessions)
             }
 
             ctx->peeraddr = peeraddr;
-            ctx->recv_size = filesize;
+            ctx->total_size = filesize;
             ctx->recv_size = 0;
             ctx->filename = filename;
             ctx->fp = fopen(filename, "wbx");
@@ -171,6 +171,8 @@ void handle_msg(int sockfd, hashtable_t *sessions)
             char ipstr[INET_ADDRSTRLEN];
             inet_ntop(AF_INET, &peeraddr.sin_addr, ipstr, INET_ADDRSTRLEN);
             eprintf("Create new session from: %s:%hu\n", ipstr, ntohs(peeraddr.sin_port));
+            eprintf("\tFilename: %s\n", filename);
+            eprintf("\tSize: %zu\n", filesize);
             if (altered) {
                 size_t filename_len = strlen(filename);
                 size_t reslen = sizeof(struct uf_data_alterres) + filename_len;
@@ -195,7 +197,7 @@ void handle_msg(int sockfd, hashtable_t *sessions)
             }
 
             size_t left_size = ctx->total_size - ctx->recv_size;
-            size_t wrotelen = fwrite(buf, 1, min((size_t)recvlen, left_size), ctx->fp);
+            size_t wrotelen = fwrite(reqp->data, 1, min(datalen, left_size), ctx->fp);
             ctx->recv_size += wrotelen;
 
             if (ctx->recv_size >= ctx->total_size) {
@@ -225,15 +227,22 @@ int server_loop(int sockfd, hashtable_t *sessions)
 {
     int epollfd;
     struct epoll_event ev, evs[EVCNT];
+    memset(&ev, 0, sizeof(struct epoll_event));
 
     ev.events = EPOLLIN;
     ev.data.fd = sockfd;
     epollfd = epoll_create(64);
-    epoll_ctl(epollfd, EPOLL_CTL_ADD, sockfd, &ev);
+    if (epoll_ctl(epollfd, EPOLL_CTL_ADD, sockfd, &ev) < 0) {
+        eprintf("Failed to epoll_ctl(EPOLL_CTL_ADD)\n");
+        return -1;
+    }
 
     while (1) {
         int nfds = epoll_wait(epollfd, evs, EVCNT, -1);
         if (nfds == -1) {
+            if (errno == EINTR) {
+                continue;
+            }
             eprintf("Failed to epoll on socket\n");
             return -1;
         }
@@ -287,6 +296,6 @@ int main(int argc, char *argv[])
 
     hashtable_t *session = ht_create(MAX_CONN, sizeof(struct sockaddr_in));
 
-    return server_loop(port, session);
+    return server_loop(udpsock, session);
 }
 
