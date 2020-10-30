@@ -81,7 +81,7 @@ ssize_t send_resp(int sockfd, const struct sockaddr_in *addr, int code, void *da
     }
 
     phdr.code = htonl(code);
-    phdr.datalen = (data ? datalen : 0);
+    phdr.datalen = htonl(data ? datalen : 0);
     
     return sendmsg(sockfd, &mhdr, 0);
 }
@@ -105,17 +105,14 @@ void handle_msg(int sockfd, hashtable_t *sessions)
     }
     struct sess_ctx *ctx = (struct sess_ctx *)ht_get(sessions, &peeraddr);
 
-    size_t left_size, wrotelen;
     int code = ntohl(reqp->code);
-    bool altered = false;
     size_t datalen = ntohl(reqp->datalen);
-    struct stat st;
     if (datalen != recvlen - sizeof(struct uf_msg_packet)) {
         send_resp(sockfd, &peeraddr, UFCODE_BAD_REQUEST, NULL, 0);
         return;
     }
     switch (code) {
-        case UFCODE_REQUEST:
+        case UFCODE_REQUEST: {
             if (ctx != NULL || datalen < sizeof(struct uf_data_sendreq)) {
                 send_resp(sockfd, &peeraddr, UFCODE_BAD_REQUEST, NULL, 0);
                 return;
@@ -142,7 +139,7 @@ void handle_msg(int sockfd, hashtable_t *sessions)
             }
             memcpy(filename, reqdata->filename, namelen);
             filename[namelen] = '\0';
-            altered = false;
+            bool altered = false;
             for (size_t i = 0; i < namelen; i++) {
                 if (filename[namelen] == '/') {
                     filename[namelen] = '_';
@@ -150,6 +147,7 @@ void handle_msg(int sockfd, hashtable_t *sessions)
                 }
             }
 
+            struct stat st;
             if (stat(filename, &st) == 0 || errno != ENOENT) {
                 send_resp(sockfd, &peeraddr, UFCODE_EXISTED, NULL, 0);
                 free(filename);
@@ -169,6 +167,10 @@ void handle_msg(int sockfd, hashtable_t *sessions)
                 return;
             }
             ht_put(sessions, &peeraddr, ctx);
+
+            char ipstr[INET_ADDRSTRLEN];
+            inet_ntop(AF_INET, &peeraddr.sin_addr, ipstr, INET_ADDRSTRLEN);
+            eprintf("Create new session from: %s:%hu\n", ipstr, ntohs(peeraddr.sin_port));
             if (altered) {
                 size_t filename_len = strlen(filename);
                 size_t reslen = sizeof(struct uf_data_alterres) + filename_len;
@@ -185,18 +187,20 @@ void handle_msg(int sockfd, hashtable_t *sessions)
             }
 
             break;
-        case UFCODE_DATA:
+        }
+        case UFCODE_DATA: {
             if (ctx == NULL) {
                 send_resp(sockfd, &peeraddr, UFCODE_BAD_REQUEST, NULL, 0);
                 return;
             }
 
-            left_size = ctx->total_size - ctx->recv_size;
-            wrotelen = fwrite(buf, 1, min((size_t)recvlen, left_size), ctx->fp);
+            size_t left_size = ctx->total_size - ctx->recv_size;
+            size_t wrotelen = fwrite(buf, 1, min((size_t)recvlen, left_size), ctx->fp);
             ctx->recv_size += wrotelen;
 
             if (ctx->recv_size >= ctx->total_size) {
                 send_resp(sockfd, &peeraddr, UFCODE_COMPLETED, NULL, 0);
+                eprintf("File %s received.\n", ctx->filename);
                 ht_remove(sessions, &peeraddr);
                 sess_ctx_free(ctx);
             } else {
@@ -204,10 +208,16 @@ void handle_msg(int sockfd, hashtable_t *sessions)
             }
 
             break;
-        case UFCODE_CANCEL:
+        }
+        case UFCODE_CANCEL: {
             // Not implemented
             send_resp(sockfd, &peeraddr, UFCODE_SERVER_ERROR, NULL, 0);
             break;
+        }
+        default: {
+            send_resp(sockfd, &peeraddr, UFCODE_BAD_REQUEST, NULL, 0);
+            break;
+        }
     }
 }
 
@@ -269,6 +279,11 @@ int main(int argc, char *argv[])
     }
 
     printf("Listening on UDP port %hu...\n", port);
+
+    if (chdir(DOWNLOAD_DIR)) {
+        eprintf("Failed to chdir() into download directory\n");
+        exit(1);
+    }
 
     hashtable_t *session = ht_create(MAX_CONN, sizeof(struct sockaddr_in));
 
