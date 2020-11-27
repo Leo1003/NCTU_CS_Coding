@@ -7,6 +7,7 @@ import itertools
 import multiprocessing
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 import sys
+import time
 # External library
 import bs4
 import requests
@@ -25,7 +26,6 @@ class PowChars:
             raise StopIteration
 
 def task_pow(S):
-    #S = input()[:5]
     chrset = iter(PowChars())
 
     for p in itertools.product(chrset, repeat=5):
@@ -42,13 +42,12 @@ def task_pow(S):
 
 
 def task_web_title(url):
-    #url = input()
     headers = {
         'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:82.0) Gecko/20100101 Firefox/82.0',
     }
 
-    r = requests.get(url, timeout = 30, headers=headers)
-    html = bs4.BeautifulSoup(r.text)
+    r = requests.get(url, headers=headers)
+    html = bs4.BeautifulSoup(r.text, features="lxml")
     print(html.title.text)
 
 async def task_web_title_async(loop, url):
@@ -56,31 +55,28 @@ async def task_web_title_async(loop, url):
         'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:82.0) Gecko/20100101 Firefox/82.0',
     }
 
-    r = await loop.run_in_executor(None, requests.get, url, timeout = 30, headers=headers)
-    html = bs4.BeautifulSoup(r.text)
+    r = await loop.run_in_executor(None, requests.get, url, {"headers": headers})
+    html = bs4.BeautifulSoup(r.text, features="lxml")
     print(html.title.text)
 
-def run_pool(pool, task_id, task_count):
-    for i in range(task_count):
-        inp = input()
-        if task_id == 1:
-            pool.submit(task_pow, inp[:5])
-        elif task_id == 2:
-            pool.submit(task_web_title, inp)
-        else:
-            sys.exit('Unknown task!')
+def run_pool(pool, task_id, task_inps):
+    if task_id == 1:
+        pool.map(task_pow, map(lambda s: s[:5], task_inps))
+    elif task_id == 2:
+        pool.map(task_web_title, task_inps)
+    else:
+        sys.exit('Unknown task!')
     pool.shutdown(wait=True)
 
-def run_coroutine(task_id, task_count):
+def run_coroutine(task_id, task_inps):
     evloop = asyncio.get_event_loop()
     tasks = []
 
-    for i in range(task_count):
-        inp = input()
+    for t in task_inps:
         if task_id == 1:
-            tasks.append(evloop.create_task(task_web_title_async(evloop, inp)))
+            tasks.append(evloop.run_in_executor(None, task_pow, t[:5]))
         elif task_id == 2:
-            tasks.append(evloop.run_in_executor(task_pow(inp[:5])))
+            tasks.append(evloop.create_task(task_web_title_async(evloop, t)))
         else:
             sys.exit('Unknown task!')
 
@@ -98,16 +94,24 @@ def main():
     else:
         sys.exit('Invalid worker type!')
 
+    inputs = []
     task_count = int(input())
+    for i in range(task_count):
+        inputs.append(input())
+
+    start = time.perf_counter()
 
     if worker_type == 1:
         with ThreadPoolExecutor(worker_count) as pool:
-            run_pool(pool, task_id, task_count)
+            run_pool(pool, task_id, inputs)
     elif worker_type == 2:
         with ProcessPoolExecutor(worker_count) as pool:
-            run_pool(pool, task_id, task_count)
+            run_pool(pool, task_id, inputs)
     else:
-        run_coroutine(task_id, task_count)
+        run_coroutine(task_id, inputs)
+
+    end = time.perf_counter()
+    print("Task completed in {:.06f} second".format(end - start))
 
 
 if __name__ == '__main__':
