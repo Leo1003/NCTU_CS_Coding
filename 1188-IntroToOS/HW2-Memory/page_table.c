@@ -1,11 +1,11 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <string.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/ioctl.h>
 #include "page_table_driver.h"
+#include <fcntl.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/ioctl.h>
+#include <unistd.h>
 
 int fd;
 
@@ -43,14 +43,13 @@ void write_physical_address(uint64_t physical_address, uint64_t value)
 
 int main()
 {
-	char *x = (char*)aligned_alloc(4096, 4096) + 0x123;
-	char *y = (char*)aligned_alloc(4096, 4096) + 0x123;
+	char *x = (char *)aligned_alloc(4096, 4096) + 0x123;
+	char *y = (char *)aligned_alloc(4096, 4096) + 0x123;
 	strcpy(x, "This is a simple HW.");
 	strcpy(y, "You have to modify my page table.");
 
 	fd = open("/dev/os", O_RDONLY);
-	if(fd < 0)
-	{
+	if (fd < 0) {
 		printf("Cannot open device!\n");
 		return 0;
 	}

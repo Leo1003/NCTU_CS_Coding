@@ -10,8 +10,7 @@
 #define IO_READ     1
 #define IO_WRITE    2
 
-struct ioctl_arg
-{
+struct ioctl_arg {
 	uint64_t ret, request[3];
 };
 
