@@ -22,19 +22,19 @@
 #define PT_MASK			(PL_MASK << PT_OFFSET)
 #define OFFSET_MASK		(4096U - 1)
 
-#define SET_OFFSET(v, off)  (((v) & 0x3FFFFFFFFFFF000UL) | ((off) & 4095UL))
+#define SET_OFFSET(v, off)	(((v) & 0x3FFFFFFFFFFF000UL) | ((off) & 4095UL))
 
 struct pt_walk_result {
-    uint64_t cr3;
-    uint64_t pml4_addr;
-    uint64_t pml4_data;
-    uint64_t pdpt_addr;
-    uint64_t pdpt_data;
-    uint64_t pd_addr;
-    uint64_t pd_data;
-    uint64_t pt_addr;
-    uint64_t pt_data;
-    uint64_t phy_addr;
+	uint64_t cr3;
+	uint64_t pml4_addr;
+	uint64_t pml4_data;
+	uint64_t pdpt_addr;
+	uint64_t pdpt_data;
+	uint64_t pd_addr;
+	uint64_t pd_data;
+	uint64_t pt_addr;
+	uint64_t pt_data;
+	uint64_t phy_addr;
 };
 
 int fd;
@@ -73,10 +73,10 @@ void write_physical_address(uint64_t physical_address, uint64_t value)
 
 static uint64_t analyze_physic_address(const void *p, struct pt_walk_result *result)
 {
-    if (p == NULL) {
-        return 0;
-    }
-    struct pt_walk_result r;
+	if (p == NULL) {
+		return 0;
+	}
+	struct pt_walk_result r;
 
 	eprintf("Virtual address: 0x%p\n", p);
 	uint64_t vaddr = (uint64_t)p;
@@ -93,42 +93,42 @@ static uint64_t analyze_physic_address(const void *p, struct pt_walk_result *res
 
 	r.cr3 = get_cr3_value();
 
-    r.pml4_addr = SET_OFFSET(r.cr3, pml4_off * sizeof(uint64_t));
-    r.pml4_data = read_physical_address(r.pml4_addr);
+	r.pml4_addr = SET_OFFSET(r.cr3, pml4_off * sizeof(uint64_t));
+	r.pml4_data = read_physical_address(r.pml4_addr);
 
-    r.pdpt_addr = SET_OFFSET(r.pml4_data, pdpt_off * sizeof(uint64_t));
-    r.pdpt_data = read_physical_address(r.pdpt_addr);
+	r.pdpt_addr = SET_OFFSET(r.pml4_data, pdpt_off * sizeof(uint64_t));
+	r.pdpt_data = read_physical_address(r.pdpt_addr);
 
-    r.pd_addr = SET_OFFSET(r.pdpt_data, pd_off * sizeof(uint64_t));
-    r.pd_data = read_physical_address(r.pd_addr);
+	r.pd_addr = SET_OFFSET(r.pdpt_data, pd_off * sizeof(uint64_t));
+	r.pd_data = read_physical_address(r.pd_addr);
 
-    r.pt_addr = SET_OFFSET(r.pd_data, pt_off * sizeof(uint64_t));
-    r.pt_data = read_physical_address(r.pt_addr);
+	r.pt_addr = SET_OFFSET(r.pd_data, pt_off * sizeof(uint64_t));
+	r.pt_data = read_physical_address(r.pt_addr);
 
-    r.phy_addr = SET_OFFSET(r.pt_data, va_off);
+	r.phy_addr = SET_OFFSET(r.pt_data, va_off);
 
-    if (result) {
-        memcpy(result, &r, sizeof(struct pt_walk_result));
-    }
-    return r.phy_addr;
+	if (result) {
+		memcpy(result, &r, sizeof(struct pt_walk_result));
+	}
+	return r.phy_addr;
 }
 
 static void dump_pt_walk_result(const struct pt_walk_result *r)
 {
-    if (r == NULL) {
-        return;
-    }
+	if (r == NULL) {
+		return;
+	}
 
-    eprintf("CR3:         \t0x%16lx\n", r->cr3);
-    eprintf("PML4 address:\t0x%16lx\n", r->pml4_addr);
-    eprintf("PML4 data:\t0x%16lx\n", r->pml4_data);
-    eprintf("PDPT address:\t0x%16lx\n", r->pdpt_addr);
-    eprintf("PDPT data:\t0x%16lx\n", r->pdpt_data);
-    eprintf("  PD address:\t0x%16lx\n", r->pd_addr);
-    eprintf("  PD data:\t0x%16lx\n", r->pd_data);
-    eprintf("  PT address:\t0x%16lx\n", r->pt_addr);
-    eprintf("  PT data:\t0x%16lx\n", r->pt_data);
-    eprintf("Physic address:\t0x%16lx\n", r->phy_addr);
+	eprintf("CR3: \t\t0x%16lx\n", r->cr3);
+	eprintf("PML4 address:\t0x%16lx\n", r->pml4_addr);
+	eprintf("PML4 data:\t0x%16lx\n", r->pml4_data);
+	eprintf("PDPT address:\t0x%16lx\n", r->pdpt_addr);
+	eprintf("PDPT data:\t0x%16lx\n", r->pdpt_data);
+	eprintf("  PD address:\t0x%16lx\n", r->pd_addr);
+	eprintf("  PD data:\t0x%16lx\n", r->pd_data);
+	eprintf("  PT address:\t0x%16lx\n", r->pt_addr);
+	eprintf("  PT data:\t0x%16lx\n", r->pt_data);
+	eprintf("Physic address:\t0x%16lx\n", r->phy_addr);
 }
 
 int main()
@@ -144,14 +144,15 @@ int main()
 		return 0;
 	}
 
-    struct pt_walk_result x_pt, y_pt;
+	struct pt_walk_result x_pt, y_pt;
 	eprintf("------ Page table walk for x ------\n");
-    analyze_physic_address(x, &x_pt);
-    dump_pt_walk_result(&x_pt);
+	analyze_physic_address(x, &x_pt);
+	dump_pt_walk_result(&x_pt);
 	eprintf("\n");
 	eprintf("------ Page table walk for y ------\n");
-    analyze_physic_address(y, &y_pt);
-    dump_pt_walk_result(&y_pt);
+	analyze_physic_address(y, &y_pt);
+	dump_pt_walk_result(&y_pt);
+	eprintf("\n");
 
 	printf("Before\n");
 	printf("x : %s\n", x);
@@ -162,7 +163,7 @@ int main()
 	// Modify page table entry of y
 	// Let y point to x's physical address
 	// ------------------------------------------------
-    write_physical_address(y_pt.pt_addr, x_pt.pt_data);
+	write_physical_address(y_pt.pt_addr, x_pt.pt_data);
 
 	printf("After modifying page table\n");
 	printf("x : %s\n", x);
@@ -180,7 +181,7 @@ int main()
 	// Let y point to its original address
 	// You may need to store y's original address at previous step
 	// ------------------------------------------------
-    write_physical_address(y_pt.pt_addr, y_pt.pt_data);
+	write_physical_address(y_pt.pt_addr, y_pt.pt_data);
 
 	getchar();
 
