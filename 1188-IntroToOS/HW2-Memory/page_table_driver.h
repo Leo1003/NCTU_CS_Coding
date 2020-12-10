@@ -1,6 +1,7 @@
 #ifndef _PAGE_TABLE_DRIVER_H
 #define _PAGE_TABLE_DRIVER_H
 
+#include <linux/types.h>
 #include <linux/ioctl.h>
 
 #define IOC_MAGIC '\xFF'
