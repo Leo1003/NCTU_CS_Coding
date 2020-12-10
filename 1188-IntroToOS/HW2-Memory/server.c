@@ -12,14 +12,20 @@ int main()
 {
     int id;
 
-    /************************* TODO 1 *************************/
     // Create a shared memory section
-    /************************* TODO 1 *************************/
+    id = shmget(SHM_KEY, sizeof(int), IPC_CREAT | 0600);
+    if (id < 0) {
+        fprintf(stderr, "Failed to create share memory!\n");
+        exit(1);
+    }
 
-    /************************* TODO 2 *************************/
     // Attach the memory section
     // the return value is a pointer to the shared memory section
-    /************************* TODO 2 *************************/
+    ptr = (int *)shmat(id, NULL, 0);
+    if (ptr == (void *)-1) {
+        fprintf(stderr, "Failed to attach to the share memory!\n");
+        exit(1);
+    }
 
     ptr[0] = 0;
     printf("\033[1;32m[server] The value is %d\033[0m\n", ptr[0]);
@@ -43,4 +49,8 @@ int main()
             break;
         }
     }
+
+    shmdt(ptr);
+    shmctl(id, IPC_RMID, NULL);
+    return 0;
 }
