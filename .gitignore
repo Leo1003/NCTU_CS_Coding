@@ -7,6 +7,9 @@
 # Unignore Makefile
 !Makefile
 
+# Dependency files
+*.d
+
 ## Complier output files
 *.o
 *.obj
