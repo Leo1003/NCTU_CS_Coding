@@ -74,8 +74,8 @@ def markov_chain_hint(matrix, hint, iter_cnt=1000, score_limit=None):
         other_seq = [row for row in other_seq if row not in init_seq]
         ans_matrix, score = markov_chain(init_seq, other_seq, iter_cnt)
         
-        print("Score: {}".format(score))
-        print(matrix_string(ans_matrix))
+        #print("Score: {}".format(score))
+        #print(matrix_string(ans_matrix))
 
         if highest_score == None or score > highest_score:
             highest_score = score
