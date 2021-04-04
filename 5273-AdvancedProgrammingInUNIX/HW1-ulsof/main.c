@@ -66,6 +66,13 @@ int main(int argc, char *argv[])
     }
 
     proc_iter();
+
+    if (opt_cmd) {
+        regfree(&opt_cmd_filter);
+    }
+    if (opt_file) {
+        regfree(&opt_file_filter);
+    }
     return 0;
 }
 

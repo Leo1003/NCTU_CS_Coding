@@ -128,7 +128,11 @@ void print_entry(const char* comm, pid_t pid, const char *user, int fd, unsigned
         }
     }
 
-    printf("%s\t%s\t", fdstr, enty_str(type));
+    if (fd != ENTRY_FD_NOFD) {
+        printf("%s\t%s\t", fdstr, enty_str(type));
+    } else {
+        printf("%s\t\t", fdstr);
+    }
     if (flag & ENTRY_FLAG_ER || inode == 0) {
         printf("\t%s\n", file);
     } else {
