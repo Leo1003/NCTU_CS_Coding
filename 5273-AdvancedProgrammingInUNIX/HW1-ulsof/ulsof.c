@@ -84,6 +84,11 @@ void print_entry(const char* comm, pid_t pid, const char *user, int fd, unsigned
         }
     }
 
+    // Transformer
+    if (proc_isdeleted(file)) {
+        type = ENTRY_TYPE_UNKNOWN;
+    }
+
     // Print process info
     int comm_ntab = tab_calc(strlen(comm), 5);
     int user_ntab = tab_calc(strlen(user), 2);
