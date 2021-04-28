@@ -9,31 +9,19 @@ def berlekamp_massey(S):
     m = -1
 
     for i in range(n):
-        if os.getenv('QUIZ6_DEBUG') == "x":
-            print("i = {}".format(i))
-            print("l = {}".format(l))
-            print("C = {}".format(C))
         # Calculate discrepancy
         d = S[i]
         for j in range(1, l + 1):
             d ^= C[j] & S[i - j]
 
-        if os.getenv('QUIZ6_DEBUG') == "x":
-            print("d = {}".format(d))
-            print()
-
         if d != 0:
             T = C.copy()
-
             
             P = []
             for j in range(i - m):
                 P.append(0)
             for j in range(len(B)):
                 P.append(B[j])
-
-            if os.getenv('QUIZ6_DEBUG') == "x":
-                print("P = {}".format(P))
 
             if len(P) > len(C):
                 C.extend([0] * (len(P) - len(C)))
@@ -42,16 +30,13 @@ def berlekamp_massey(S):
             for j in range(len(C)):
                 C[j] = (C[j] + P[j]) % 2
 
-            if os.getenv('QUIZ6_DEBUG') == "x":
-                print("_bm_shift() = {}".format(C))
-                print()
-
             if (2 * l) <= i:
                 l = i + 1 - l
                 B = T
                 m = i
 
     if os.getenv('QUIZ6_DEBUG'):
+        print("l = {}".format(l))
         print("C = {}".format(C))
     return l, C
 
