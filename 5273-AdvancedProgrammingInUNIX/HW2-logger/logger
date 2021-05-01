@@ -3,7 +3,7 @@ SCRIPT_NAME="logger"
 
 OPT_LD_LIBRARY="logger.so"
 OPT_LOG_OUTPUT=""
-CMD_ARGV=""
+CMD_ARGV=()
 
 print_usage() {
     echo "usage: ./logger [-o file] [-p sopath] [--] cmd [cmd args ...]"
@@ -16,9 +16,9 @@ main() {
     args_parsing "$@"
 
     if [ -n "$OPT_LOG_OUTPUT" ]; then
-        LD_PRELOAD="$OPT_LD_LIBRARY" LOGGER_FILE="$OPT_LOG_OUTPUT" "$CMD_ARGV"
+        LD_PRELOAD="$OPT_LD_LIBRARY" LOGGER_FILE="$OPT_LOG_OUTPUT" ${CMD_ARGV[@]}
     else
-        LD_PRELOAD="$OPT_LD_LIBRARY" "$CMD_ARGV"
+        LD_PRELOAD="$OPT_LD_LIBRARY" ${CMD_ARGV[@]}
     fi
 }
 
@@ -58,7 +58,7 @@ args_parsing() {
         print_usage >&2
         exit 1
     fi
-    CMD_ARGV="$@"
+    CMD_ARGV=("$@")
 }
 
 main "$@"

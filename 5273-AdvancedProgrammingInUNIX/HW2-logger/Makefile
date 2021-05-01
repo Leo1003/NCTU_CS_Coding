@@ -13,10 +13,10 @@ BINNAME     = logger.so
 AINCDIR     = 
 INCDIR      = 
 LIBS        = dl
-FLAGS       = 
+FLAGS       = -fPIC
 CFLAGS      = -std=c11
 CXXFLAGS    = -std=c++17
-LDFLAGS     = -Wl,--gc-sections -fPIC -shared
+LDFLAGS     = -shared
 DEFFLAGS    = 
 DBGFLAGS    = -g -DDEBUG
 LDSCRIPT    = 

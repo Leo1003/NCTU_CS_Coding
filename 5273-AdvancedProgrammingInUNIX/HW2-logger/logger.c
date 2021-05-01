@@ -3,10 +3,49 @@
 
 #include <ctype.h>
 #include <limits.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
+static FILE *logfp = NULL;
+
+void logger_init()
+{
+    if (logfp != NULL) {
+        return;
+    }
+
+    const char *path = getenv("LOGGER_FILE");
+    if (path == NULL) {
+        // Duplicate the file stream to enable buffering on stderr.
+        logfp = fdopen(fileno(stderr), "w");
+    } else {
+        logfp = fopen(path, "w");
+    }
+
+    if (logfp == NULL) {
+        return;
+    }
+    setlinebuf(logfp);
+}
+
+int logger_printf(const char *fmt, ...)
+{
+    if (logfp == NULL) {
+        logger_init();
+        if (logfp == NULL) {
+            return 0;
+        }
+    }
+
+    va_list ap;
+    va_start(ap, fmt);
+    int ret = vfprintf(logfp, fmt, ap);
+    va_end(ap);
+    return ret;
+}
 
 int logger_fmt_path(char *buf, size_t buflen, const char *path)
 {
