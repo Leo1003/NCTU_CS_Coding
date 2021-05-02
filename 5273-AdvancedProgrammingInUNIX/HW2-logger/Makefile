@@ -6,14 +6,14 @@ AS      := $(TARGET)as
 LD      := $(TARGET)gcc
 GDB     := $(TARGET)gdb
 
-BUILD   ?= debug
+BUILD   ?= release
 
 # User Settings
 BINNAME     = logger.so
 AINCDIR     = 
 INCDIR      = 
 LIBS        = dl
-FLAGS       = -fPIC
+FLAGS       = -fPIC -Wall
 CFLAGS      = -std=c11
 CXXFLAGS    = -std=c++17
 LDFLAGS     = -shared

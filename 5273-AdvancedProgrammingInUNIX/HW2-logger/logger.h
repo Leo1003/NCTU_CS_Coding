@@ -4,12 +4,16 @@
 #define MIN(a, b) (a < b ? a : b)
 #define MAX(a, b) (a > b ? a : b)
 
+#define LOGGER_HEADER "[logger] "
+
 #include <stddef.h>
 #include <stdio.h>
 
 void logger_init();
 
 int logger_printf(const char *fmt, ...);
+
+int logger_fd();
 
 int logger_fmt_path(char *buf, size_t buflen, const char *path);
 

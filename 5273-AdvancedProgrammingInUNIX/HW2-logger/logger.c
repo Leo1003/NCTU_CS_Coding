@@ -2,6 +2,7 @@
 #include "logger.h"
 
 #include <ctype.h>
+#include <errno.h>
 #include <limits.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -17,27 +18,56 @@ void logger_init()
         return;
     }
 
+    const char *parent_logfd = getenv("LOGGER_FD");
+    if (parent_logfd) {
+        char *endptr;
+
+        errno = 0;
+        int fd = strtol(parent_logfd, &endptr, 10);
+        if (!(errno != 0 || *endptr != '\0')) {
+            logfp = fdopen(fd, "w");
+            if (logfp) {
+#ifndef NDEBUG
+                logger_printf(LOGGER_HEADER);
+                logger_printf("Logger inherited! (fd = %d)\n", fd);
+#endif
+                return;
+            }
+            // Error fall through
+        }
+        // Error fall through
+    }
+
     const char *path = getenv("LOGGER_FILE");
     if (path == NULL) {
         // Duplicate the file stream to enable buffering on stderr.
-        logfp = fdopen(fileno(stderr), "w");
+        //logfp = fdopen(fileno(stderr), "w");
+        logfp = stderr;
     } else {
         logfp = fopen(path, "w");
+        if (logfp) {
+            char fdstr[256];
+            snprintf(fdstr, sizeof(fdstr), "%d", fileno(logfp));
+            setenv("LOGGER_FD", fdstr, 1);
+#ifndef NDEBUG
+            logger_printf(LOGGER_HEADER);
+            logger_printf("Logger initialized! (fd = %d)\n", fileno(logfp));
+#endif
+        }
     }
 
+    /*
     if (logfp == NULL) {
         return;
     }
     setlinebuf(logfp);
+    */
 }
 
 int logger_printf(const char *fmt, ...)
 {
     if (logfp == NULL) {
-        logger_init();
-        if (logfp == NULL) {
-            return 0;
-        }
+        return 0;
     }
 
     va_list ap;
@@ -47,6 +77,14 @@ int logger_printf(const char *fmt, ...)
     return ret;
 }
 
+int logger_fd()
+{
+    if (logfp == NULL) {
+        return -1;
+    }
+    return fileno(logfp);
+}
+
 int logger_fmt_path(char *buf, size_t buflen, const char *path)
 {
     char local_buf[PATH_MAX];
@@ -54,7 +92,7 @@ int logger_fmt_path(char *buf, size_t buflen, const char *path)
     if (realpath(path, local_buf) == NULL) {
         strncpy(buf, path, buflen);
         buf[buflen - 1] = '\0';
-        return 0;
+        return -1;
     }
 
     strncpy(buf, local_buf, buflen);
@@ -67,7 +105,16 @@ int logger_fmt_fd(char *buf, size_t buflen, int fd)
     char proc_path[PATH_MAX];
     snprintf(proc_path, sizeof(proc_path), "/proc/self/fd/%d", fd);
     
-    return logger_fmt_path(buf, buflen, proc_path);
+    int ret = logger_fmt_path(buf, buflen, proc_path);
+    if (ret < 0) {
+        ssize_t len = readlink(proc_path, buf, buflen - 1);
+        if (len < 0) {
+            return -1;
+        }
+        buf[len + 1] = '\0';
+        return 0;
+    }
+    return ret;
 }
 
 int logger_fmt_fp(char *buf, size_t buflen, FILE *fp)
