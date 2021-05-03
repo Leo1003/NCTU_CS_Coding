@@ -27,7 +27,7 @@ args_parsing() {
     ARG_OPTS="$(getopt -o "p:o:" -n "$SCRIPT_NAME" -- "$@")"
     local retval=$?
     if [ $retval -ne 0 ]; then
-        print_usage >&2
+        print_usage
         exit 1
     fi
 
@@ -55,7 +55,7 @@ args_parsing() {
     done
 
     if [ $# -lt 1 ]; then
-        print_usage >&2
+        echo "no command given."
         exit 1
     fi
     CMD_ARGV=("$@")
