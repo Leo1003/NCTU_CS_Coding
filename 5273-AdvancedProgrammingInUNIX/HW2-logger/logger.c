@@ -5,11 +5,13 @@
 #include <errno.h>
 #include <limits.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
+__thread bool logger_writing = false;
 static FILE *logfp = NULL;
 
 void logger_init()
@@ -70,10 +72,14 @@ int logger_printf(const char *fmt, ...)
         return 0;
     }
 
+    logger_writing = true;
+
     va_list ap;
     va_start(ap, fmt);
     int ret = vfprintf(logfp, fmt, ap);
     va_end(ap);
+
+    logger_writing = false;
     return ret;
 }
 
@@ -111,7 +117,7 @@ int logger_fmt_fd(char *buf, size_t buflen, int fd)
         if (len < 0) {
             return -1;
         }
-        buf[len + 1] = '\0';
+        buf[len] = '\0';
         return 0;
     }
     return ret;

@@ -6,8 +6,11 @@
 
 #define LOGGER_HEADER "[logger] "
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
+
+extern __thread bool logger_writing;
 
 void logger_init();
 

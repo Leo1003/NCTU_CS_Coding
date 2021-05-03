@@ -319,14 +319,6 @@ FILE *tmpfile()
 
 ssize_t write(int fildes, const void *buf, size_t nbyte)
 {
-    if (fildes == logger_fd()) {
-        // Logger print, skip
-        if (_write == NULL) {
-            wait_injector_init();
-        }
-        return _write(fildes, buf, nbyte);
-    }
-
     char databuf[256];
     char pathbuf[PATH_MAX];
 
@@ -334,6 +326,11 @@ ssize_t write(int fildes, const void *buf, size_t nbyte)
         wait_injector_init();
     }
     ssize_t ret = _write(fildes, buf, nbyte);
+
+    if (logger_writing) {
+        // Logger print, skip
+        return ret;
+    }
 
     logger_fmt_fd(pathbuf, sizeof(pathbuf), fildes);
     logger_fmt_buffer(databuf, sizeof(databuf), buf, nbyte);
