@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 SCRIPT_NAME="logger"
 
-OPT_LD_LIBRARY="logger.so"
+OPT_LD_LIBRARY="./logger.so"
 OPT_LOG_OUTPUT=""
 CMD_ARGV=()
 
