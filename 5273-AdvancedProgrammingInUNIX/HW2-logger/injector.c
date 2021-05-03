@@ -18,15 +18,19 @@ static int (*_creat)(const char *path, mode_t mode) = NULL;
 static int (*_fclose)(FILE *stream) = NULL;
 static FILE *(*_fopen)(const char *restrict pathname,
                        const char *restrict mode) = NULL;
+static FILE *(*_fopen64)(const char *restrict pathname,
+                         const char *restrict mode) = NULL;
 static size_t (*_fread)(void *restrict ptr, size_t size, size_t nmemb,
                         FILE *restrict stream) = NULL;
 static size_t (*_fwrite)(const void *restrict ptr, size_t size, size_t nmemb,
                          FILE *restrict stream) = NULL;
 static int (*_open)(const char *path, int oflag, mode_t mode) = NULL;
+static int (*_open64)(const char *path, int oflag, mode_t mode) = NULL;
 static ssize_t (*_read)(int fildes, void *buf, size_t nbyte) = NULL;
 static int (*_remove)(const char *pathname) = NULL;
 static int (*_rename)(const char *old, const char *new) = NULL;
 static FILE *(*_tmpfile)(void) = NULL;
+static FILE *(*_tmpfile64)(void) = NULL;
 static ssize_t (*_write)(int fildes, const void *buf, size_t nbyte) = NULL;
 
 void injector_init()
@@ -42,13 +46,16 @@ void injector_init()
     _creat = dlsym(RTLD_NEXT, "creat");
     _fclose = dlsym(RTLD_NEXT, "fclose");
     _fopen = dlsym(RTLD_NEXT, "fopen");
+    _fopen64 = dlsym(RTLD_NEXT, "fopen64");
     _fread = dlsym(RTLD_NEXT, "fread");
     _fwrite = dlsym(RTLD_NEXT, "fwrite");
     _open = dlsym(RTLD_NEXT, "open");
+    _open64 = dlsym(RTLD_NEXT, "open64");
     _read = dlsym(RTLD_NEXT, "read");
     _remove = dlsym(RTLD_NEXT, "remove");
     _rename = dlsym(RTLD_NEXT, "rename");
     _tmpfile = dlsym(RTLD_NEXT, "tmpfile");
+    _tmpfile64 = dlsym(RTLD_NEXT, "tmpfile64");
     _write = dlsym(RTLD_NEXT, "write");
 
     atomic_store_explicit(&initialized, true, memory_order_release);
@@ -195,6 +202,22 @@ FILE *fopen(const char *pathname, const char *mode)
     return ret;
 }
 
+FILE *fopen64(const char *pathname, const char *mode)
+{
+    char pathbuf[PATH_MAX];
+
+    if (_fopen64 == NULL) {
+        wait_injector_init();
+    }
+    FILE *ret = _fopen64(pathname, mode);
+
+    logger_fmt_path(pathbuf, sizeof(pathbuf), pathname);
+    logger_printf(LOGGER_HEADER);
+    logger_printf("fopen(\"%s\", \"%s\")", pathbuf, mode);
+    logger_printf(" = %p\n", ret);
+    return ret;
+}
+
 size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
 {
     char databuf[256];
@@ -239,6 +262,22 @@ int open(const char *path, int oflag, mode_t mode)
         wait_injector_init();
     }
     int ret = _open(path, oflag, mode);
+
+    logger_fmt_path(pathbuf, sizeof(pathbuf), path);
+    logger_printf(LOGGER_HEADER);
+    logger_printf("open(\"%s\", %o, %03o)", pathbuf, oflag, mode);
+    logger_printf(" = %d\n", ret);
+    return ret;
+}
+
+int open64(const char *path, int oflag, mode_t mode)
+{
+    char pathbuf[PATH_MAX];
+
+    if (_open64 == NULL) {
+        wait_injector_init();
+    }
+    int ret = _open64(path, oflag, mode);
 
     logger_fmt_path(pathbuf, sizeof(pathbuf), path);
     logger_printf(LOGGER_HEADER);
@@ -310,6 +349,19 @@ FILE *tmpfile()
         wait_injector_init();
     }
     FILE *ret = _tmpfile();
+
+    logger_printf(LOGGER_HEADER);
+    logger_printf("tmpfile()");
+    logger_printf(" = %p\n", ret);
+    return ret;
+}
+
+FILE *tmpfile64()
+{
+    if (_tmpfile64 == NULL) {
+        wait_injector_init();
+    }
+    FILE *ret = _tmpfile64();
 
     logger_printf(LOGGER_HEADER);
     logger_printf("tmpfile()");
