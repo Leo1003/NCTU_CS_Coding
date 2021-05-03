@@ -131,6 +131,9 @@ int logger_fmt_fp(char *buf, size_t buflen, FILE *fp)
 int logger_fmt_buffer(char *buf, size_t buflen, const unsigned char* data, size_t datalen)
 {
     size_t printlen = MIN(MIN(datalen, 32), buflen - 1);
+    if (data == NULL) {
+        printlen = 0;
+    }
     size_t i;
     for (i = 0; i < printlen; i++) {
         if (isprint(data[i])) {
