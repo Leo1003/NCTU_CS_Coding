@@ -15,6 +15,7 @@ static int (*_chmod)(const char *path, mode_t mode) = NULL;
 static int (*_chown)(const char *path, uid_t owner, gid_t group) = NULL;
 static int (*_close)(int fildes) = NULL;
 static int (*_creat)(const char *path, mode_t mode) = NULL;
+static int (*_creat64)(const char *path, mode_t mode) = NULL;
 static int (*_fclose)(FILE *stream) = NULL;
 static FILE *(*_fopen)(const char *restrict pathname,
                        const char *restrict mode) = NULL;
@@ -44,6 +45,7 @@ void injector_init()
     _chown = dlsym(RTLD_NEXT, "chown");
     _close = dlsym(RTLD_NEXT, "close");
     _creat = dlsym(RTLD_NEXT, "creat");
+    _creat64 = dlsym(RTLD_NEXT, "creat64");
     _fclose = dlsym(RTLD_NEXT, "fclose");
     _fopen = dlsym(RTLD_NEXT, "fopen");
     _fopen64 = dlsym(RTLD_NEXT, "fopen64");
@@ -169,6 +171,22 @@ int creat(const char *path, mode_t mode)
     return ret;
 }
 
+int creat64(const char *path, mode_t mode)
+{
+    char pathbuf[PATH_MAX];
+
+    if (_creat64 == NULL) {
+        wait_injector_init();
+    }
+    int ret = _creat64(path, mode);
+
+    logger_fmt_path(pathbuf, sizeof(pathbuf), path);
+    logger_printf(LOGGER_HEADER);
+    logger_printf("creat64(\"%s\", %03o)", pathbuf, mode);
+    logger_printf(" = %d\n", ret);
+    return ret;
+}
+
 int fclose(FILE *stream)
 {
     char pathbuf[PATH_MAX];
@@ -213,7 +231,7 @@ FILE *fopen64(const char *pathname, const char *mode)
 
     logger_fmt_path(pathbuf, sizeof(pathbuf), pathname);
     logger_printf(LOGGER_HEADER);
-    logger_printf("fopen(\"%s\", \"%s\")", pathbuf, mode);
+    logger_printf("fopen64(\"%s\", \"%s\")", pathbuf, mode);
     logger_printf(" = %p\n", ret);
     return ret;
 }
@@ -229,7 +247,7 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
     size_t ret = _fread(ptr, size, nmemb, stream);
 
     logger_fmt_fp(pathbuf, sizeof(pathbuf), stream);
-    logger_fmt_buffer(databuf, sizeof(databuf), ptr, ret);
+    logger_fmt_buffer(databuf, sizeof(databuf), ptr, ret * size);
     logger_printf(LOGGER_HEADER);
     logger_printf("fread(\"%s\", %zu, %zu, \"%s\")", databuf, size, nmemb, pathbuf);
     logger_printf(" = %zu\n", ret);
@@ -247,7 +265,7 @@ size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
     size_t ret = _fwrite(ptr, size, nmemb, stream);
 
     logger_fmt_fp(pathbuf, sizeof(pathbuf), stream);
-    logger_fmt_buffer(databuf, sizeof(databuf), ptr, ret);
+    logger_fmt_buffer(databuf, sizeof(databuf), ptr, ret * size);
     logger_printf(LOGGER_HEADER);
     logger_printf("fwrite(\"%s\", %zu, %zu, \"%s\")", databuf, size, nmemb, pathbuf);
     logger_printf(" = %zu\n", ret);
@@ -281,7 +299,7 @@ int open64(const char *path, int oflag, mode_t mode)
 
     logger_fmt_path(pathbuf, sizeof(pathbuf), path);
     logger_printf(LOGGER_HEADER);
-    logger_printf("open(\"%s\", %o, %03o)", pathbuf, oflag, mode);
+    logger_printf("open64(\"%s\", %o, %03o)", pathbuf, oflag, mode);
     logger_printf(" = %d\n", ret);
     return ret;
 }
@@ -364,7 +382,7 @@ FILE *tmpfile64()
     FILE *ret = _tmpfile64();
 
     logger_printf(LOGGER_HEADER);
-    logger_printf("tmpfile()");
+    logger_printf("tmpfile64()");
     logger_printf(" = %p\n", ret);
     return ret;
 }

@@ -43,8 +43,17 @@ void logger_init()
     const char *path = getenv("LOGGER_FILE");
     if (path == NULL) {
         // Duplicate the file stream to enable buffering on stderr.
-        //logfp = fdopen(fileno(stderr), "w");
-        logfp = stderr;
+        logfp = fdopen(dup(fileno(stderr)), "w");
+        //logfp = stderr;
+        if (logfp) {
+            char fdstr[256];
+            snprintf(fdstr, sizeof(fdstr), "%d", fileno(logfp));
+            setenv("LOGGER_FD", fdstr, 1);
+#ifndef NDEBUG
+            logger_printf(LOGGER_HEADER);
+            logger_printf("Logger initialized! (fd = %d)\n", fileno(logfp));
+#endif
+        }
     } else {
         logfp = fopen(path, "w");
         if (logfp) {
