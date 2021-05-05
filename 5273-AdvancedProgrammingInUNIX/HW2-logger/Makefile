@@ -13,8 +13,8 @@ BINNAME     = logger.so
 AINCDIR     = 
 INCDIR      = 
 LIBS        = dl
-FLAGS       = -fPIC -Wall
-CFLAGS      = -std=c11
+FLAGS       = -fPIC
+CFLAGS      = -std=c11 -Wall
 CXXFLAGS    = -std=c++17
 LDFLAGS     = -shared
 DEFFLAGS    = 
@@ -26,7 +26,7 @@ ZFLAGS      =
 ZASFLAGS    = $(foreach d, $(AINCDIR), -I$d)
 ZCFLAGS     = $(OPTIFLAGS) $(DEFFLAGS) $(foreach d, $(INCDIR), -I$d) $(CFLAGS)
 ZCXXFLAGS   = $(OPTIFLAGS) $(DEFFLAGS) $(foreach d, $(INCDIR), -I$d) $(CXXFLAGS)
-ZLDFLAGS    = $(foreach l, $(LIBS), -l$l) $(LDFLAGS)
+ZLDFLAGS    = $(LDFLAGS)
 
 OPTIFLAGS   = 
 ifeq ($(BUILD),debug)
@@ -83,7 +83,7 @@ $(DEPDIR)/%.d: %.cpp | $(DEPDIR)
 	@$(CXX) -MM -MP $(FLAGS) $(ZCXXFLAGS) $< >> $@
 
 $(BINNAME): $(OBJS)
-	$(LD) $(FLAGS) $(ZLDFLAGS) -o $@ $(OBJS)
+	$(LD) $(FLAGS) $(ZLDFLAGS) -o $@ $(OBJS) $(foreach l, $(LIBS), -l$l)
 
 ifneq ($(DEPS),)
   sinclude $(DEPS)
