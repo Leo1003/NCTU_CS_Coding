@@ -6,7 +6,7 @@ AS      := $(TARGET)yasm
 LD      := $(TARGET)ld
 GDB     := $(TARGET)gdb
 
-BUILD   ?= release
+BUILD   ?= debug
 
 # User Settings
 AINCDIR     =
@@ -16,7 +16,7 @@ FLAGS       =
 ASFLAGS     = -f elf64 -DPIC
 CFLAGS      = -std=c11 -Wall -fno-stack-protector -nostdlib
 CXXFLAGS    = -std=c++17
-LDFLAGS     = -L. -L..
+LDFLAGS     = -m elf_x86_64 --dynamic-linker /lib64/ld-linux-x86-64.so.2 -L. -L..
 DEFFLAGS    = -DUSEMINI
 DBGFLAGS    = -g -DDEBUG
 LDSCRIPT    = 

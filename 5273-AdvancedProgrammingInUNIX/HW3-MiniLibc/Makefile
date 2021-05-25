@@ -6,7 +6,7 @@ AS      := $(TARGET)yasm
 LD      := $(TARGET)ld
 GDB     := $(TARGET)gdb
 
-BUILD   ?= release
+BUILD   ?= debug
 
 # User Settings
 BINNAME     = libmini.so
@@ -17,7 +17,7 @@ FLAGS       =
 ASFLAGS     = -f elf64 -DPIC
 CFLAGS      = -std=c11 -Wall -fno-stack-protector -fno-tree-loop-distribute-patterns -fPIC -nostdlib
 CXXFLAGS    = -std=c++17
-LDFLAGS     = -shared -fPIC
+LDFLAGS     = -shared
 DEFFLAGS    = 
 DBGFLAGS    = -g -DDEBUG
 LDSCRIPT    = 
