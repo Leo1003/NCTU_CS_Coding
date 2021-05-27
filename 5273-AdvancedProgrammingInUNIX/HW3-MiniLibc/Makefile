@@ -14,7 +14,7 @@ AINCDIR     =
 INCDIR      = 
 LIBS        =
 FLAGS       =
-ASFLAGS     = -f elf64 -DPIC
+ASFLAGS     = -f elf64 -DPIC -DYASM -D__x86_64__
 CFLAGS      = -std=c11 -Wall -fno-stack-protector -fno-tree-loop-distribute-patterns -fPIC -nostdlib
 CXXFLAGS    = -std=c++17
 LDFLAGS     = -shared
@@ -85,6 +85,9 @@ $(DEPDIR)/%.d: %.cpp | $(DEPDIR)
 
 $(BINNAME): $(OBJS)
 	$(LD) $(FLAGS) $(ZLDFLAGS) -o $@ $(OBJS) $(foreach l, $(LIBS), -l$l)
+
+tests: $(BINNAME)
+	$(MAKE) -C tests all
 
 alarm1: $(BINNAME)
 	$(MAKE) -C tests alarm1

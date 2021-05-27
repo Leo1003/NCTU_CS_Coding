@@ -57,7 +57,7 @@ DEPS        = $(addprefix $(DEPDIR)/,$(DEPFILES))
 
 .PHONY: clean distclean gdb
 
-all: $(BINNAME)
+all: alarm1 alarm2 alarm3 jmp1
 
 $(OBJDIR):
 	mkdir -p $(OBJDIR)
