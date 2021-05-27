@@ -106,3 +106,47 @@ sleep_quit:
 	add	rsp, 32
 	ret
 
+JB_RBX: equ 0
+JB_RBP: equ 8
+JB_R12: equ 16
+JB_R13: equ 24
+JB_R14: equ 32
+JB_R15: equ 40
+JB_RSP: equ 48
+JB_PC: 	equ 56
+
+	extern __setjmp_savemask
+
+	global setjmp:function
+setjmp:
+	mov [rdi + JB_RBX], rbx
+	mov [rdi + JB_RBP], rbp
+	mov [rdi + JB_R12], r12
+	mov [rdi + JB_R13], r13
+	mov [rdi + JB_R14], r14
+	mov [rdi + JB_R15], r15
+	; Calculate correct rsp after return
+	lea rdx, [rsp + 8]
+	mov [rdi + JB_RSP], rdx
+	; Get the return address
+	mov rax, [rsp]
+	mov [rdi + JB_PC],  rax
+
+	call __setjmp_savemask wrt ..plt
+	ret
+
+	global __longjmp:function
+__longjmp:
+	mov rbx, [rdi + JB_RBX]
+	mov r12, [rdi + JB_R12]
+	mov r13, [rdi + JB_R13]
+	mov r14, [rdi + JB_R14]
+	mov r15, [rdi + JB_R15]
+	mov rsp, [rdi + JB_RSP]
+	mov rbp, [rdi + JB_RBP]
+	mov rdx, [rdi + JB_PC]
+
+	xor rax, rax
+	mov eax, esi
+	jmp rdx
+

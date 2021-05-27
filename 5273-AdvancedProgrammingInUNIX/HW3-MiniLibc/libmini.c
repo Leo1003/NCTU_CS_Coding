@@ -271,22 +271,21 @@ size_t strlen(const char *s)
     return count;
 }
 
-int setjmp(jmp_buf env)
-{
-    sigprocmask(SIG_BLOCK, NULL, &env.saved_mask);
+// Assembly version
+void __longjmp(jmp_buf env, int val) __attribute__((noreturn));
 
-    // TODO
-    //__setjmp();
+int __setjmp_savemask(jmp_buf env)
+{
+    sigprocmask(SIG_BLOCK, NULL, &env[0].saved_mask);
 
     return 0;
 }
 
 void longjmp(jmp_buf env, int val)
 {
-    sigprocmask(SIG_SETMASK, &env.saved_mask, NULL);
+    sigprocmask(SIG_SETMASK, &env[0].saved_mask, NULL);
 
-    // TODO
-    //__longjmp();
+    __longjmp(env, val);
 }
 
 int sigemptyset(sigset_t *set)
@@ -303,32 +302,29 @@ int sigfillset(sigset_t *set)
 
 int sigaddset(sigset_t *set, int signum)
 {
-    // FIXME: Error signal settings
-    if (signum < 0 || signum > __MAX_SIG) {
+    if (signum <= 0 || signum > __MAX_SIG) {
         return -1;
     }
-    *set |= (1UL << signum);
+    *set |= (1UL << (signum - 1));
     return 0;
 }
 
 int sigdelset(sigset_t *set, int signum)
 {
-    // FIXME: Error signal settings
-    if (signum < 0 || signum > __MAX_SIG) {
+    if (signum <= 0 || signum > __MAX_SIG) {
         return -1;
     }
-    unsigned long mask = ~(1UL << signum);
+    unsigned long mask = ~(1UL << (signum - 1));
     *set &= mask;
     return 0;
 }
 
 int sigismember(const sigset_t *set, int signum)
 {
-    // FIXME: Error signal settings
-    if (signum < 0 || signum > __MAX_SIG) {
+    if (signum <= 0 || signum > __MAX_SIG) {
         return 0;
     }
-    unsigned long mask = ~(1UL << signum);
+    unsigned long mask = 1UL << (signum - 1);
     return (*set & mask) ? 1 : 0;
 }
 

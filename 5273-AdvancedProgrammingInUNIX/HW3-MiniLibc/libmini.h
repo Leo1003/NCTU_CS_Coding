@@ -174,7 +174,7 @@ typedef unsigned long sigset_t;
 typedef struct __jmp_buf {
     long long regs[8];
     sigset_t saved_mask;
-} jmp_buf;
+} jmp_buf[1];
 
 typedef void (*sighandler_t)(int);
 
