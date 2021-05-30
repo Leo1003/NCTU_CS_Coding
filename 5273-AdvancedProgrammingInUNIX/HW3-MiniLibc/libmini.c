@@ -263,6 +263,24 @@ void bzero(void *s, size_t size)
         *ptr++ = '\0';
 }
 
+void *memset(void *s, int c, size_t n)
+{
+    unsigned char *ptr = (unsigned char *)s;
+    while (n-- > 0)
+        *ptr++ = c;
+    return s;
+}
+
+void *memcpy(void *restrict dest, const void *restrict src, size_t n)
+{
+    unsigned char *d = (unsigned char *)dest;
+    unsigned char *s = (unsigned char *)src;
+    for (size_t i = 0; i < n; i++) {
+        d[i] = s[i];
+    }
+    return dest;
+}
+
 size_t strlen(const char *s)
 {
     size_t count = 0;

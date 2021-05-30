@@ -273,6 +273,8 @@ gid_t getegid();
 
 void bzero(void *s, size_t size);
 size_t strlen(const char *s);
+void *memset(void *s, int c, size_t n);
+void *memcpy(void *restrict dest, const void *restrict src, size_t n);
 void perror(const char *prefix);
 unsigned int sleep(unsigned int s);
 

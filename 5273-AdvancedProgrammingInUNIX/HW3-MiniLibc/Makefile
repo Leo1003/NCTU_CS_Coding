@@ -18,7 +18,7 @@ LIBS        =
 FLAGS       =
 ARFLAGS     = -rcs
 ASFLAGS     = -f elf64 -DPIC -DYASM -D__x86_64__
-CFLAGS      = -std=c11 -Wall -fno-stack-protector -fno-tree-loop-distribute-patterns -fPIC -nostdlib
+CFLAGS      = -std=c11 -Wall -fno-stack-protector -fPIC -nostdlib
 CXXFLAGS    = -std=c++17
 LDFLAGS     = -shared
 DEFFLAGS    = 
