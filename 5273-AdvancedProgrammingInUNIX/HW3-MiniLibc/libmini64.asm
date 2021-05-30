@@ -1,16 +1,20 @@
+; Function call arguments:
+; (RDI, RSI, RDX, RCX, R8, R9)
+;
+; Syscall arguments:
+; (RDI, RSI, RDX, R10, R8, R9)
+;   clobbers:
+;   RCX = RIP
+;   R11 = RFLAGS
 
 %macro gensys 2
 	global sys_%2:function
 sys_%2:
-	push	r10
 	mov	r10, rcx
 	mov	rax, %1
 	syscall
-	pop	r10
 	ret
 %endmacro
-
-; RDI, RSI, RDX, RCX, R8, R9
 
 extern	errno
 
