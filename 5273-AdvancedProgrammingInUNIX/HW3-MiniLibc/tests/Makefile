@@ -100,7 +100,7 @@ endif
 
 clean:
 	rm -rf obj
-	rm -f *.o $(BINNAME)
+	rm -f *.o alarm1 alarm2 alarm3 jmp1
 
 distclean: clean
 	rm -rf dep
