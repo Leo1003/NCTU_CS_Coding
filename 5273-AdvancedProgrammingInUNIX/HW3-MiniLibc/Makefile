@@ -2,6 +2,7 @@
 TARGET  := 
 CC      := $(TARGET)gcc
 CXX     := $(TARGET)g++
+AR      := $(TARGET)ar
 AS      := $(TARGET)yasm
 LD      := $(TARGET)ld
 GDB     := $(TARGET)gdb
@@ -10,10 +11,12 @@ BUILD   ?= debug
 
 # User Settings
 BINNAME     = libmini.so
+ARNAME      = $(BINNAME:.so=.a)
 AINCDIR     = 
 INCDIR      = 
 LIBS        =
 FLAGS       =
+ARFLAGS     = -rcs
 ASFLAGS     = -f elf64 -DPIC -DYASM -D__x86_64__
 CFLAGS      = -std=c11 -Wall -fno-stack-protector -fno-tree-loop-distribute-patterns -fPIC -nostdlib
 CXXFLAGS    = -std=c++17
@@ -58,7 +61,7 @@ DEPS        = $(addprefix $(DEPDIR)/,$(DEPFILES))
 
 .PHONY: clean distclean gdb
 
-all: $(BINNAME)
+all: $(BINNAME) $(ARNAME)
 
 $(OBJDIR):
 	mkdir -p $(OBJDIR)
@@ -86,6 +89,9 @@ $(DEPDIR)/%.d: %.cpp | $(DEPDIR)
 $(BINNAME): $(OBJS)
 	$(LD) $(FLAGS) $(ZLDFLAGS) -o $@ $(OBJS) $(foreach l, $(LIBS), -l$l)
 
+$(ARNAME): $(OBJS)
+	$(AR) $(ARFLAGS) -o $@ $(OBJS)
+
 tests: $(BINNAME)
 	$(MAKE) -C tests all
 
@@ -110,7 +116,7 @@ gdb: $(BINNAME)
 
 clean:
 	rm -rf obj
-	rm -f *.o $(BINNAME)
+	rm -f *.o $(BINNAME) $(ARNAME)
 	$(MAKE) -C tests clean
 
 distclean: clean
