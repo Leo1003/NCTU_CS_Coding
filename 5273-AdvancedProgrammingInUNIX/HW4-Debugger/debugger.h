@@ -1,13 +1,27 @@
 #ifndef _HW4_DEBUGGER_H
 #define _HW4_DEBUGGER_H
 
+#define LOGD "** "
+
 #include <stdint.h>
+#include <sys/types.h>
+
+enum dbg_state {
+    DBG_STATE_INIT,
+    DBG_STATE_LOADED,
+    DBG_STATE_RUNNING,
+};
 
 typedef struct dbg_ctx {
+    enum dbg_state state;
+    pid_t child_pid;
     unsigned long prev_disasm_addr, prev_dump_addr;
 } dbg_ctx;
 
 void dbg_ctx_init(dbg_ctx *ctx);
+void dbg_shutdown(dbg_ctx *ctx);
+int dbg_brkpt_disable(dbg_ctx *ctx, unsigned int id);
+int dbg_brkpt_enable(dbg_ctx *ctx, unsigned int id);
 int dbg_cmd_break(dbg_ctx *ctx, unsigned long addr);
 int dbg_cmd_cont(dbg_ctx *ctx);
 int dbg_cmd_delete(dbg_ctx *ctx, unsigned int id);
