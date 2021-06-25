@@ -10,7 +10,6 @@
 
 #define PROMPT "sdb> "
 #define DELIM " \t\v\n"
-#define MAX_ARGV 256
 
 void usage()
 {
@@ -132,6 +131,9 @@ int parse_value(const char *s, unsigned long *val)
 int process_cmdline(dbg_ctx *ctx, char *line)
 {
     char *t = strtok(line, DELIM);
+    if (t == NULL) {
+        return 0;
+    }
 
     if (strcmp(t, "break") == 0 || strcmp(t, "b") == 0) {
         t = strtok(NULL, DELIM);
@@ -176,7 +178,8 @@ int process_cmdline(dbg_ctx *ctx, char *line)
 
         return dbg_cmd_dump(ctx, addr);
     } else if (strcmp(t, "exit") == 0 || strcmp(t, "q") == 0) {
-        return dbg_cmd_exit(ctx);
+        dbg_cmd_exit(ctx);
+        exit(0);
     } else if (strcmp(t, "get") == 0 || strcmp(t, "g") == 0) {
         char *reg = strtok(NULL, DELIM);
         if (reg == NULL) {
@@ -198,7 +201,7 @@ int process_cmdline(dbg_ctx *ctx, char *line)
             return -2;
         }
 
-        return dbg_cmd_get(ctx, file);
+        return dbg_cmd_load(ctx, file);
     } else if (strcmp(t, "run") == 0 || strcmp(t, "r") == 0) {
         char *argv[MAX_ARGV + 1];
         for (size_t i = 0; i < MAX_ARGV; i++) {
@@ -239,8 +242,9 @@ int process_cmdline(dbg_ctx *ctx, char *line)
         argv[MAX_ARGV] = NULL;
 
         return dbg_cmd_start(ctx, (const char **)argv);
+    } else {
+        debugf("Unknown Command.\n");
+        return -2;
     }
-
-    return -3;
 }
 

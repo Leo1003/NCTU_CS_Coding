@@ -1,6 +1,7 @@
 #ifndef _HW4_DEBUGGER_H
 #define _HW4_DEBUGGER_H
 
+#define MAX_ARGV 256
 #define LOGD "** "
 #define debugf(fmt, ...) printf(LOGD fmt, ##__VA_ARGS__)
 #define errorf(fmt, ...) \
@@ -23,6 +24,13 @@ enum dbg_state {
 typedef uint64_t udata_t;
 typedef int64_t data_t;
 
+typedef struct map_entry {
+    uintptr_t start, end;
+    uint8_t perm;
+    unsigned long offset;
+    char name[4096];
+} map_entry;
+
 typedef struct dbg_brkpt {
     struct dbg_brkpt *prev, *next;
     unsigned id;
@@ -37,6 +45,10 @@ typedef struct dbg_ctx {
     uintptr_t prev_disasm_addr, prev_dump_addr;
     dbg_brkpt *brkpt, *brkpt_end;
     unsigned brkpt_nextid;
+    char *loaded_program;
+    size_t start_address;
+    map_entry *vmmaps;
+    size_t vmmaps_len;
 } dbg_ctx;
 
 void dbg_ctx_init(dbg_ctx *ctx);

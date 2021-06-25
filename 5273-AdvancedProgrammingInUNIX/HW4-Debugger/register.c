@@ -29,8 +29,7 @@ const struct register_mapping reg_maps[] = {
 
 const struct register_mapping *register_lookup(const char *name)
 {
-    size_t cnt = sizeof(*reg_maps) / sizeof(struct user_regs_struct);
-    for (size_t i = 0; i < cnt; i++) {
+    for (size_t i = 0; reg_maps[i].name != NULL; i++) {
         if (strcasecmp(name, reg_maps[i].name) == 0) {
             return &reg_maps[i];
         }
